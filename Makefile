@@ -2,19 +2,19 @@
 
 all: client serverC serverCS serverEE serverM
 	
-client:
+client: client.c utils.c utils.h log.h
 	gcc -g -Wall -o client client.c
 	
-serverC:
-	gcc -g -Wall -o serverC serverC.c
+serverC: serverC.c utils.c utils.h log.h
+	gcc -g -Wall -o serverC serverC.c utils.c
 
-serverCS:
-	gcc -g -Wall -o serverCS serverCS.c
+serverCS: serverCS.c utils.c utils.h log.h
+	gcc -g -Wall -o serverCS serverCS.c utils.c
 
-serverEE:
+serverEE: serverEE.c utils.c utils.h log.h
 	gcc -g -Wall -o serverEE serverEE.c
 
-serverM:
+serverM: serverM.c utils.c utils.h log.h
 	gcc -g -Wall -o serverM serverM.c
 
 

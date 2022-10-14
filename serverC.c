@@ -20,6 +20,7 @@ authentication status.
 #include <sys/wait.h>
 
 #include "log.h"
+#include "messages.h"
 #include "utils.h"
 
 #define CREDENTIALS_FILE "cred.txt"
@@ -30,7 +31,10 @@ typedef enum {
     AUTH_DB_NOT_FOUND,
     AUTH_FAIL_NO_USER,
     AUTH_FAIL_PASS_MISMATCH,
+    AUTH_FAIL_INVALID_REQUEST,
 } auth_status_t;
+
+// TODO - Check Auth implementation
 
 auth_status_t authenticate_user(char* username, size_t username_len, char* password, size_t password_len) {
     auth_status_t ret = AUTH_FAIL_NO_USER;
@@ -41,11 +45,8 @@ auth_status_t authenticate_user(char* username, size_t username_len, char* passw
         return AUTH_DB_NOT_FOUND;
     }
 
-    // go through each line of the file
-    // lines contain comma separated username and password
-    // check if the username and password match
-    // if so, return AUTH_OK
-    // if not, return AUTH_FAIL_PASS_MISMATCH
+    LOGI("Authenticating user '%s' with password '%s'...", username, password);
+
     while (fgets(line, sizeof(line), fp)) {
         char* token = strtok(line, ",");
         if (token == NULL) {
@@ -71,75 +72,54 @@ auth_status_t authenticate_user(char* username, size_t username_len, char* passw
     return ret;
 }
 
-int auth_server_start() {
-    // Create a UDP Socket
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) {
-        LOGE("Failed to create socket %d", errno);
-        exit(1);
-    }
-    // Bind the socket to a port
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(5000);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        LOGE("Failed to bind socket to port %d", 5000);
-        exit(1);
-    }
-    return sockfd;
-}
-
-void auth_server_tick(int sockfd) {
-    // Receive a message from the client
-    struct sockaddr_in client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
-    char buf[1024] = {0};
-    LOGD("Waiting for a message on %d on port %d", sockfd, 5000);
-    int n = recvfrom(sockfd, buf, sizeof(buf), 0, (struct sockaddr*)&client_addr, &client_addr_len);
-    if (n < 0) {
-        LOGE("Failed to receive message %s", "from client");
-        return;
-    }
-    LOGD("Received message from %s:%d", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-    LOGD("Message: (%d) %.*s", n, n, buf);
-
-    // Parse the message
-    char* token = strtok(buf, ",");
+static int parse_authentication_request(udp_dgram_t* datagram, char* username_buf, size_t username_buf_len, char* password_buf, size_t password_buf_len) {
+    char* token = strtok(datagram->data, ",");
     if (token == NULL) {
-        LOGE("Invalid message %s", "");
-        return;
+        return -1;
     }
-    char* username = token;
+    strncpy(username_buf, token, username_buf_len);
     token = strtok(NULL, ",");
     if (token == NULL) {
-        LOGE("Invalid message %s", "");
-        return;
+        return -1;
     }
-    char* password = token;
-
-    // Authenticate the user
-    auth_status_t status = authenticate_user(username, strlen(username), password, strlen(password));
-    LOGD("Authentication status: %d", status);
-
-    // Send the authentication status back to the client
-    n = sendto(sockfd, &status, sizeof(status), 0, (struct sockaddr*)&client_addr, client_addr_len);
-    if (n < 0) {
-        LOGE("Failed to send message on socket %d", sockfd);
-        return;
-    }
+    strncpy(password_buf, token, password_buf_len);
+    return 0;
 }
 
-void auth_server_stop(int sockfd) {
-    // Close the socket
-    close(sockfd);
+static void udp_message_rx_handler(udp_server_t* server, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
+    LOGIM(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
+    char username[1024] = {0};
+    char password[1024] = {0};
+    auth_status_t status = AUTH_FAIL_UNKNOWN;
+    if (parse_authentication_request(req_dgram, username, sizeof(username), password, sizeof(password)) == 0) {
+        status = authenticate_user(username, strlen(username), password, strlen(password));
+    } else {
+        status = AUTH_FAIL_INVALID_REQUEST;
+    }
+    udp_dgram_t resp_dgram = {0};
+    resp_dgram.data_len = sizeof(status);
+    memcpy(resp_dgram.data, (char*)&status, sizeof(status));
+    udp_server_send(server, source, &resp_dgram);
+}
+
+static void udp_message_tx_handler(udp_server_t* server, udp_endpoint_t* dest, udp_dgram_t* datagram) {
+    LOGIM(SERVER_C_MESSAGE_ON_AUTH_RESPONSE_SENT);
+}
+
+
+static void on_server_init(udp_server_t* server) {
+    LOGI(SERVER_C_MESSAGE_ON_BOOTUP, server->port);
+    server->on_rx = udp_message_rx_handler;
+    server->on_tx = udp_message_tx_handler;
 }
 
 int main(int argc, char* argv[]) {
-    int sockfd = auth_server_start();
+    udp_server_t* serverC = udp_server_start(SERVER_C_UDP_PORT_NUMBER, on_server_init);
+
     while(1) {
-        auth_server_tick(sockfd);
+        udp_server_receive(serverC);
     }
-    auth_server_stop(sockfd);
+
+    udp_server_stop(serverC);
     return 0;
 }

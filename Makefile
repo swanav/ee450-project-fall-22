@@ -17,6 +17,12 @@ serverEE: serverEE.c utils.c utils.h log.h
 serverM: serverM.c utils.c utils.h log.h
 	gcc -g -Wall -o serverM serverM.c
 
+bundle:
+	tar cvf ee450_Swaroop_Swanav_1349754053.tar *.[ch] Makefile
+	gzip ee450_Swaroop_Swanav_1349754053.tar
+
+run:
+	./serverC && ./serverCS && ./serverEE && ./serverM && ./client
 
 clean:
 	$(RM) -r client serverEE serverCS serverC serverM *.dSYM

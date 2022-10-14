@@ -12,7 +12,7 @@ serverCS: serverCS.c utils.c utils.h log.h
 	gcc -g -Wall -o serverCS serverCS.c utils.c
 
 serverEE: serverEE.c utils.c utils.h log.h
-	gcc -g -Wall -o serverEE serverEE.c
+	gcc -g -Wall -o serverEE serverEE.c utils.c
 
 serverM: serverM.c utils.c utils.h log.h
 	gcc -g -Wall -o serverM serverM.c

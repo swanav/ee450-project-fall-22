@@ -87,11 +87,11 @@ static int parse_authentication_request(udp_dgram_t* datagram, char* username_bu
 }
 
 static void udp_message_rx_handler(udp_server_t* server, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
-    LOGIM(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
-    char username[1024] = {0};
-    char password[1024] = {0};
+    char username[32] = {0};
+    char password[32] = {0};
     auth_status_t status = AUTH_FAIL_UNKNOWN;
     if (parse_authentication_request(req_dgram, username, sizeof(username), password, sizeof(password)) == 0) {
+        LOGIM(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
         status = authenticate_user(username, strlen(username), password, strlen(password));
     } else {
         status = AUTH_FAIL_INVALID_REQUEST;
@@ -115,11 +115,9 @@ static void on_server_init(udp_server_t* server) {
 
 int main(int argc, char* argv[]) {
     udp_server_t* serverC = udp_server_start(SERVER_C_UDP_PORT_NUMBER, on_server_init);
-
     while(1) {
         udp_server_receive(serverC);
     }
-
     udp_server_stop(serverC);
     return 0;
 }

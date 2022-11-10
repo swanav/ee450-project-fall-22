@@ -21,6 +21,8 @@ authentication status.
 
 #include "log.h"
 #include "messages.h"
+#include "networking.h"
+#include "udp_server.h"
 #include "utils.h"
 
 #define CREDENTIALS_FILE "cred.txt"

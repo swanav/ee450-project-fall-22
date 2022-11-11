@@ -21,103 +21,97 @@ authentication status.
 
 #include "log.h"
 #include "messages.h"
+#include "networking.h"
+#include "udp_server.h"
 #include "utils.h"
+#include "data/credentials.h"
 
 #define CREDENTIALS_FILE "cred.txt"
 
+typedef uint8_t auth_status_t;
+
+
+static udp_ctx_t* udp_peer_ctx;
+static credentials_t* credentials_db = NULL;
+
 typedef enum {
-    AUTH_OK,
-    AUTH_FAIL_UNKNOWN,
-    AUTH_DB_NOT_FOUND,
-    AUTH_FAIL_NO_USER,
-    AUTH_FAIL_PASS_MISMATCH,
-    AUTH_FAIL_INVALID_REQUEST,
-} auth_status_t;
+    AUTH_REQUEST_VALIDATE = 0,
+    AUTH_REQUEST_END
+} auth_request_type_t;
 
-// TODO - Check Auth implementation
+typedef enum {
+    AUTH_RESPONSE_VALIDATE = 0,
+    AUTH_RESPONSE_END
+} auth_response_type_t;
 
-auth_status_t authenticate_user(char* username, size_t username_len, char* password, size_t password_len) {
-    auth_status_t ret = AUTH_FAIL_NO_USER;
-    FILE* fp = csv_open(CREDENTIALS_FILE);
-    char line[1024];
 
-    if (fp == NULL) {
-        return AUTH_DB_NOT_FOUND;
+static auth_request_type_t get_request_type(udp_dgram_t* datagram) {
+    if (datagram->data_len == 0 || datagram->data[0] >= AUTH_REQUEST_END) {
+        return ERR_REQ_INVALID;
     }
-
-    LOGI("Authenticating user '%s' with password '%s'...", username, password);
-
-    while (fgets(line, sizeof(line), fp)) {
-        char* token = strtok(line, ",");
-        if (token == NULL) {
-            continue;
-        }
-        if (strncmp(token, username, username_len) == 0) {
-            token = strtok(NULL, ",");
-            if (token == NULL) {
-                continue;
-            }
-            if (strncmp(token, password, password_len) == 0) {
-                ret = AUTH_OK;
-                break;
-            } else {
-                ret = AUTH_FAIL_PASS_MISMATCH;
-                break;
-            }
-        }
-    }
-
-    csv_close(fp);
-
-    return ret;
+    return datagram->data[0];
 }
 
-static int parse_authentication_request(udp_dgram_t* datagram, char* username_buf, size_t username_buf_len, char* password_buf, size_t password_buf_len) {
-    char* token = strtok(datagram->data, ",");
-    if (token == NULL) {
-        return -1;
+static void handle_auth_request_validate(const uint8_t* in_buffer, const size_t in_buffer_len, uint8_t* out_buffer, size_t* out_buffer_len, size_t out_buffer_size) {
+    *out_buffer_len = 2;
+    out_buffer[0] = AUTH_RESPONSE_VALIDATE;
+
+    credentials_t credentials = {0};
+
+    err_t result = credentials_decode(&credentials, in_buffer + 1, in_buffer_len - 1);
+    if (result == ERR_INVALID_PARAMETERS) {
+        LOGEM("Failed to parse authentication request");
+        out_buffer[1] = ERR_CREDENTIALS_INVALID_REQUEST;
+        return;
     }
-    strncpy(username_buf, token, username_buf_len);
-    token = strtok(NULL, ",");
-    if (token == NULL) {
-        return -1;
+
+    auth_status_t auth_status = credentials_validate(credentials_db, &credentials);
+    if (auth_status == ERR_INVALID_PARAMETERS) {
+        LOGEM("Failed to validate credentials: Invalid Parameters");
+        out_buffer[1] = ERR_CREDENTIALS_INVALID_REQUEST;
+        return;
     }
-    strncpy(password_buf, token, password_buf_len);
-    return 0;
+    out_buffer[1] = auth_status;
 }
 
-static void udp_message_rx_handler(udp_server_t* server, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
-    char username[32] = {0};
-    char password[32] = {0};
-    auth_status_t status = AUTH_FAIL_UNKNOWN;
-    if (parse_authentication_request(req_dgram, username, sizeof(username), password, sizeof(password)) == 0) {
-        LOGIM(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
-        status = authenticate_user(username, strlen(username), password, strlen(password));
-    } else {
-        status = AUTH_FAIL_INVALID_REQUEST;
-    }
+static void request_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
     udp_dgram_t resp_dgram = {0};
-    resp_dgram.data_len = sizeof(status);
-    memcpy(resp_dgram.data, (char*)&status, sizeof(status));
-    udp_server_send(server, source, &resp_dgram);
+    
+    auth_request_type_t req_type = get_request_type(req_dgram);
+
+    if (req_type == AUTH_REQUEST_VALIDATE) {
+        LOGIM(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
+        handle_auth_request_validate((const uint8_t*) req_dgram->data, req_dgram->data_len, (uint8_t*) resp_dgram.data, &resp_dgram.data_len, sizeof(resp_dgram.data));
+    } else {
+        LOGIM(SERVER_C_MESSAGE_ON_INVALID_REQUEST_RECEIVED);
+        resp_dgram.data[0] = AUTH_RESPONSE_END;
+        resp_dgram.data_len = 1;
+    }
+
+    udp_send(ctx, source, &resp_dgram);
 }
 
-static void udp_message_tx_handler(udp_server_t* server, udp_endpoint_t* dest, udp_dgram_t* datagram) {
+static void udp_message_rx_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
+    request_handler(ctx, source, req_dgram);
+}
+
+static void udp_message_tx_handler(udp_ctx_t* server, udp_endpoint_t* dest, udp_dgram_t* datagram) {
     LOGIM(SERVER_C_MESSAGE_ON_AUTH_RESPONSE_SENT);
 }
 
-
-static void on_server_init(udp_server_t* server) {
-    LOGI(SERVER_C_MESSAGE_ON_BOOTUP, server->port);
-    server->on_rx = udp_message_rx_handler;
-    server->on_tx = udp_message_tx_handler;
+static void on_server_init(udp_ctx_t* udp) {
+    LOGI(SERVER_C_MESSAGE_ON_BOOTUP, udp->port);
+    udp->on_rx = udp_message_rx_handler;
+    udp->on_tx = udp_message_tx_handler;
 }
 
 int main(int argc, char* argv[]) {
-    udp_server_t* serverC = udp_server_start(SERVER_C_UDP_PORT_NUMBER, on_server_init);
+    credentials_db = credentials_init(CREDENTIALS_FILE);
+    credentials_print(credentials_db);
+    udp_peer_ctx = udp_start(SERVER_C_UDP_PORT_NUMBER, on_server_init);
     while(1) {
-        udp_server_receive(serverC);
+        udp_receive(udp_peer_ctx);
     }
-    udp_server_stop(serverC);
+    udp_stop(udp_peer_ctx);
     return 0;
 }

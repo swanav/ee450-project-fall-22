@@ -10,7 +10,21 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 
+#include "log.h"
+#include "messages.h"
+#include "utils.h"
+
 int main() {
-    printf("Hello, serverM.c!\r\n");
+
+    // int sockfd = create_tcp_server(SERVER_M_TCP_PORT_NUMBER);
+    // if (sockfd < 0) {
+    //     LOGEM("Failed to create TCP Server");
+    //     exit(1);
+    // }
+
+    LOGIM(SERVER_M_MESSAGE_ON_BOOTUP);
+
+
+
     return 0;
 }

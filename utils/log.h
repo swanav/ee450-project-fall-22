@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#define LOG_DEBUG
 #ifndef LOG_DEBUG
 #define DLOG 0
 #else

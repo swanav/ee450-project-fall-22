@@ -27,6 +27,7 @@ udp_server_t* udp_server_start(int port, udp_post_start_cb on_init) {
                 LOGE("Failed to bind socket to port %d. Error: %s.", port, strerror(errno));
                 free(server);
             } else {
+                LOGD("UDP Server started on port %d", port);
                 on_init(server);
             }
         }

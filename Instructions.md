@@ -92,7 +92,7 @@ The result of the authentication request (Pass or Fail-with reason) is sent to t
 
 In this phase, you are required to implement sending the request from client to main server and then forwarding the request from the central registration to the backend server.
 
-**Phase 3A:** In this part, you will implement the client sending a query to the central registration server. Your client should show a promote of
+**Phase 3A:** In this part, you will implement the client sending a query to the central registration server. Your client should show a prompt of
 ```
 Please enter the course code to query:
 ```
@@ -100,7 +100,7 @@ Assuming the student entered:
 ```
 EE450
 ```
-And then the client program will promote:
+And then the client program will prompt:
 
 ```
 Please enter the category (Credit / Professor / Days / CourseName):

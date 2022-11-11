@@ -52,38 +52,6 @@ static int auth_encrypt(char* plaintext, size_t plaintext_len, char* ciphertext_
     return 0;
 }
 
-// Create a TCP Server to communicate with the Client
-int create_tcp_server(int port) {
-    int sockfd;
-    struct sockaddr_in server_addr;
-
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        LOGEM("socket() error");
-        return -1;
-    }
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    bzero(&(server_addr.sin_zero), 8);
-
-    if (bind(sockfd, (struct sockaddr*) &server_addr, sizeof(struct sockaddr)) == -1) {
-        LOGEM("bind() error");
-        return -1;
-    }
-
-    if (listen(sockfd, 10) == -1) {
-        LOGEM("listen() error");
-        return -1;
-    }
-
-    return sockfd;
-}
-
-// Close the TCP Server
-void close_tcp_server(int sockfd) {
-    close(sockfd);
-}
 
 int main() {
 
@@ -95,21 +63,6 @@ int main() {
 
     LOGIM(SERVER_M_MESSAGE_ON_BOOTUP);
 
-
-    // char plaintext1[50] = "Welcome to EE450!";
-    // char ciphertext[50];
-    // size_t ciphertext_len;
-
-    // auth_encrypt(plaintext1, strlen(plaintext1), ciphertext, sizeof(ciphertext), &ciphertext_len);
-    // LOGV("1 --> %s --> %.*s", plaintext1, (int) ciphertext_len, ciphertext);
-
-    // char plaintext2[50] = "199@$";
-    // auth_encrypt(plaintext2, strlen(plaintext2), ciphertext, sizeof(ciphertext), &ciphertext_len);
-    // LOGV("2 --> %s --> %.*s", plaintext2, (int) ciphertext_len, ciphertext);
-    
-    // char plaintext3[50] = "0.27#&";
-    // auth_encrypt(plaintext3, strlen(plaintext3), ciphertext, sizeof(ciphertext), &ciphertext_len);
-    // LOGV("3 --> %s --> %.*s", plaintext3, (int) ciphertext_len, ciphertext);
 
 
     return 0;

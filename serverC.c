@@ -27,15 +27,14 @@ authentication status.
 
 #define CREDENTIALS_FILE "cred.txt"
 
-typedef enum {
-    AUTH_OK,
-    AUTH_FAIL_UNKNOWN,
-    AUTH_DB_NOT_FOUND,
-    AUTH_FAIL_NO_USER,
-    AUTH_FAIL_PASS_MISMATCH,
-    AUTH_FAIL_INVALID_REQUEST,
-} auth_status_t;
+typedef uint8_t auth_status_t;
 
+#define AUTH_OK                     (1 << 0)
+#define AUTH_FAIL_DB_NOT_FOUND      (1 << 1)
+#define AUTH_FAIL_NO_USER           (1 << 2)
+#define AUTH_FAIL_PASS_MISMATCH     (1 << 3)
+#define AUTH_FAIL_INVALID_REQUEST   (1 << 4)
+#define AUTH_FAIL_UNKNOWN           (1 << 5)
 // TODO - Check Auth implementation
 
 auth_status_t authenticate_user(char* username, size_t username_len, char* password, size_t password_len) {
@@ -44,7 +43,7 @@ auth_status_t authenticate_user(char* username, size_t username_len, char* passw
     char line[1024];
 
     if (fp == NULL) {
-        return AUTH_DB_NOT_FOUND;
+        return AUTH_FAIL_DB_NOT_FOUND;
     }
 
     LOGI("Authenticating user '%s' with password '%s'...", username, password);

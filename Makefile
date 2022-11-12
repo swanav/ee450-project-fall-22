@@ -6,7 +6,7 @@ client: client.c utils/** networking/**
 	gcc -g -Wall -Iutils -Inetworking -o $(OUTPUT_DIR)/client client.c utils/**.c networking/udp_server.c
 	
 serverC: serverC.c utils/** networking/**
-	gcc -g -Wall -Iutils -Inetworking -o $(OUTPUT_DIR)/serverC serverC.c utils/**.c networking/udp_server.c
+	gcc -g -Wall -Iutils -Inetworking -o $(OUTPUT_DIR)/serverC serverC.c utils/**.c networking/udp_server.c data/credentials.c
 
 serverCS: serverCS.c utils/** networking/** data/**
 	gcc -g -Wall -Idata -Iutils -Inetworking -o $(OUTPUT_DIR)/serverCS serverCS.c serverSub.c utils/**.c networking/udp_server.c data/courses.c

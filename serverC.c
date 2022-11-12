@@ -59,7 +59,7 @@ static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram
 
     credentials_t credentials = {0};
 
-    err_t result = credentials_decode(&credentials, req_dgram->data + 1, req_dgram->data_len - 1);
+    err_t result = credentials_decode(&credentials, (const uint8_t*) req_dgram->data + 1, req_dgram->data_len - 1);
     if (result == ERR_INVALID_PARAMETERS) {
         LOGEM("Failed to parse authentication request");
         res_dgram->data[0] = ERR_CREDENTIALS_INVALID_REQUEST;

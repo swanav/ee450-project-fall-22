@@ -16,6 +16,7 @@ def send_to_server(port: int, message: bytes):
     sock.sendto(message, destination)
     msg, address = sock.recvfrom(1024)
     print("Query result {}:{} {}".format(address[0], address[1], msg))
+    assert len(msg) > 0
 
 def test_cs_server():
     for i in range(0, len(cs_courses)):
@@ -34,5 +35,5 @@ def test_ee_server():
             send_to_server(ee_port, query)
 
 
-test_cs_server()
-test_ee_server()
+# test_cs_server()
+# test_ee_server()

@@ -25,4 +25,4 @@ run:
 	./serverC && ./serverCS && ./serverEE && ./serverM && ./client
 
 clean:
-	$(RM) -r client serverEE serverCS serverC serverM *.dSYM
+	$(RM) -r client serverEE serverCS serverC serverM *.dSYM out && mkdir out

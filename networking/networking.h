@@ -22,4 +22,10 @@ struct __message_t {
 typedef struct __message_t tcp_sgmnt_t;
 typedef struct __message_t udp_dgram_t;
 
+#define ENCODE_SIMPLE_ERROR_MESSAGE(message, err_code) \
+do { \
+    (message)->data_len = 1; \
+    (message)->data[0] = err_code; \
+} while(0)
+
 #endif // NETWORKING_H

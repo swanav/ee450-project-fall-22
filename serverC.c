@@ -52,36 +52,37 @@ static auth_request_type_t get_request_type(udp_dgram_t* datagram) {
     return datagram->data[0];
 }
 
-static void handle_auth_request_validate(const uint8_t* in_buffer, const size_t in_buffer_len, uint8_t* out_buffer, size_t* out_buffer_len, size_t out_buffer_size) {
-    *out_buffer_len = 2;
-    out_buffer[0] = AUTH_RESPONSE_VALIDATE;
+static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram_t* res_dgram) {
+
+    res_dgram->data_len = 2;
+    res_dgram->data[0] = AUTH_RESPONSE_VALIDATE;
 
     credentials_t credentials = {0};
 
-    err_t result = credentials_decode(&credentials, in_buffer + 1, in_buffer_len - 1);
+    err_t result = credentials_decode(&credentials, req_dgram->data + 1, req_dgram->data_len - 1);
     if (result == ERR_INVALID_PARAMETERS) {
         LOGEM("Failed to parse authentication request");
-        out_buffer[1] = ERR_CREDENTIALS_INVALID_REQUEST;
+        res_dgram->data[0] = ERR_CREDENTIALS_INVALID_REQUEST;
         return;
     }
 
     auth_status_t auth_status = credentials_validate(credentials_db, &credentials);
     if (auth_status == ERR_INVALID_PARAMETERS) {
         LOGEM("Failed to validate credentials: Invalid Parameters");
-        out_buffer[1] = ERR_CREDENTIALS_INVALID_REQUEST;
+        res_dgram->data[0] = ERR_CREDENTIALS_INVALID_REQUEST;
         return;
     }
-    out_buffer[1] = auth_status;
+    res_dgram->data[0] = auth_status;
 }
 
-static void request_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
+static void udp_message_rx_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
     udp_dgram_t resp_dgram = {0};
     
     auth_request_type_t req_type = get_request_type(req_dgram);
 
     if (req_type == AUTH_REQUEST_VALIDATE) {
         LOGIM(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
-        handle_auth_request_validate((const uint8_t*) req_dgram->data, req_dgram->data_len, (uint8_t*) resp_dgram.data, &resp_dgram.data_len, sizeof(resp_dgram.data));
+        handle_auth_request_validate(req_dgram, &resp_dgram);
     } else {
         LOGIM(SERVER_C_MESSAGE_ON_INVALID_REQUEST_RECEIVED);
         resp_dgram.data[0] = AUTH_RESPONSE_END;
@@ -89,10 +90,6 @@ static void request_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_dgram_t*
     }
 
     udp_send(ctx, source, &resp_dgram);
-}
-
-static void udp_message_rx_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
-    request_handler(ctx, source, req_dgram);
 }
 
 static void udp_message_tx_handler(udp_ctx_t* server, udp_endpoint_t* dest, udp_dgram_t* datagram) {

@@ -7,7 +7,7 @@
 #include <udp_server.h>
 #include <log.h>
 
-udp_ctx_t* udp_start(int port, udp_post_start_cb on_init) {
+udp_ctx_t* udp_start(uint16_t port, udp_post_start_cb on_init) {
     udp_ctx_t* udp = (udp_ctx_t*) calloc(1, sizeof(udp_ctx_t));
 
     if (udp == NULL) {

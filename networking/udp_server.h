@@ -21,7 +21,7 @@ struct __udp_ctx_t {
 
 typedef void (*udp_post_start_cb)(udp_ctx_t* udp);
 
-udp_ctx_t* udp_start(int port, udp_post_start_cb on_init);
+udp_ctx_t* udp_start(uint16_t port, udp_post_start_cb on_init);
 void udp_stop(udp_ctx_t* udp);
 void udp_receive(udp_ctx_t* udp);
 void udp_send(udp_ctx_t* udp, udp_endpoint_t* dest, udp_dgram_t* datagram);

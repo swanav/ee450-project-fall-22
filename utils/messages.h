@@ -13,11 +13,13 @@
 #define SERVER_C_MESSAGE_ON_AUTH_RESPONSE_SENT "The ServerC finished sending the response to the Main Server."
 #define SERVER_C_MESSAGE_ON_INVALID_REQUEST_RECEIVED "The ServerC received an invalid request from the Main Server."
 
-#define SERVER__MESSAGE_ON_BOOTUP(branch) "The Server"#branch" is up and running using UDP on port %d."
-#define SERVER__MESSAGE_ON_REQUEST_RECEIVED(branch) "The Server"#branch" received a request from the Main Server about the %s of %s."
-#define SERVER__MESSAGE_ON_COURSE_FOUND(branch) "The course information has been found: The %s of the %s is %s."
-#define SERVER__MESSAGE_ON_COURSE_NOT_FOUND(branch) "Didn't find the course: %s."
-#define SERVER__MESSAGE_ON_RESPONSE_SENT(branch) "The Server"#branch" finished sending the response to the Main Server."
+#define SERVER_SUB_MESSAGE_ON_BOOTUP "The Server%s is up and running using UDP on port %d."
+#define SERVER_SUB_MESSAGE_ON_LOOKUP_REQUEST_RECEIVED "The Server%s received a request from the Main Server about the %s of %s."
+#define SERVER_SUB_MESSAGE_ON_SUMMARY_REQUEST_RECEIVED "The Server%s received a request from the Main Server for all the details of %s."
+#define SERVER_SUB_MESSAGE_ON_COURSE_FOUND "The course information has been found: The %s of the %s is %s."
+#define SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND "Didn't find the course: %s."
+#define SERVER_SUB_MESSAGE_ON_RESPONSE_SENT "The Server%s finished sending the response to the Main Server."
+#define SERVER_SUB_MESSAGE_ON_REQUEST_INVALID "The server%s received an invalid request from the Main Server."
 
 #define SERVER_M_MESSAGE_ON_BOOTUP "The main server is up and running."
 #define SERVER_M_MESSAGE_ON_AUTH_REQUEST_RECEIVED "The main server received the authentication for %s using TCP over port %d."

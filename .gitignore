@@ -4,3 +4,5 @@
 *.dSYM
 
 out/**
+
+__pycache__/

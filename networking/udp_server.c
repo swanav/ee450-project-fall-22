@@ -7,7 +7,7 @@
 #include <udp_server.h>
 #include <log.h>
 
-udp_ctx_t* udp_start(uint16_t port, udp_post_start_cb on_init) {
+udp_ctx_t* udp_start(uint16_t port, udp_post_start_cb on_init, udp_start_failure_callback on_failure) {
     udp_ctx_t* udp = (udp_ctx_t*) calloc(1, sizeof(udp_ctx_t));
 
     if (udp == NULL) {
@@ -16,16 +16,18 @@ udp_ctx_t* udp_start(uint16_t port, udp_post_start_cb on_init) {
         udp->port = port;
         udp->sd = socket(AF_INET, SOCK_DGRAM, 0);
         if (udp->sd < 0) {
-            LOGE("Failed to create socket on port %d. Error: %s.", port, strerror(errno));
+            LOGW("Failed to create socket on port %d. Error: %s.", port, strerror(errno));
             free(udp);
+            on_failure(UDP_START_FAILURE_REASON_SOCKET, errno);
         } else {
             struct sockaddr_in server_addr;
             server_addr.sin_family = AF_INET;
             server_addr.sin_addr.s_addr = INADDR_ANY;
             server_addr.sin_port = htons(port);
             if (bind(udp->sd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-                LOGE("Failed to bind socket to port %d. Error: %s.", port, strerror(errno));
+                LOGW("Failed to bind socket to port %d. Error: %s.", port, strerror(errno));
                 free(udp);
+                on_failure(UDP_START_FAILURE_REASON_BIND, errno);
             } else {
                 LOGD("UDP Server started on port %d", port);
                 on_init(udp);

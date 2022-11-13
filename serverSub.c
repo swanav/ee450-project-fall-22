@@ -98,10 +98,17 @@ static void on_server_init(udp_ctx_t* udp) {
     udp->on_tx = udp_message_tx_handler;
 }
 
+static void on_server_init_failed(start_failure_reason_t reason, int error_code) {
+    LOGI(SERVER_SUB_MESSAGE_ON_BOOTUP_FAILED, subject_code, strerror(errno));
+    exit(1);
+}
+
 int subjectServerMain(const char* subjectCode, const uint16_t port, const char* db_file) {
     subject_code = subjectCode;
     db = courses_init(db_file);
-    udp_ctx_t* udp = udp_start(port, on_server_init);
+
+    udp_ctx_t* udp = udp_start(port, on_server_init, on_server_init_failed);
+
     while(1) {
         udp_receive(udp);
     }

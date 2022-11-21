@@ -64,7 +64,7 @@ void udp_receive(udp_ctx_t* udp) {
 
 void udp_send(udp_ctx_t* udp, udp_endpoint_t* dst, udp_dgram_t* dgram) {
     if (udp != NULL && dst != NULL && dgram != NULL) {
-        LOGD("Sending UDP Datagram to %s:%d", inet_ntoa(dst->addr.sin_addr), ntohs(dst->addr.sin_port));
+        LOGD("Sending UDP Datagram (%ld bytes) to "IP_ADDR_FORMAT, dgram->data_len, IP_ADDR(dst));
         if (sendto(udp->sd, dgram->data, dgram->data_len, 0, (struct sockaddr*)&dst->addr, dst->addr_len) < 0) {
             LOGE("Failed to send UDP Datagram. Error: %s.", strerror(errno));
         } else {

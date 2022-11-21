@@ -17,7 +17,7 @@ typedef struct __credentials_t {
 } credentials_t;
 
 
-err_t credentials_encode(const credentials_t* in_credentials, uint8_t* out_buffer, const uint8_t out_buffer_size, uint8_t* out_buffer_len);
+err_t credentials_encode(const credentials_t* in_credentials, uint8_t* out_buffer, const size_t out_buffer_size, uint8_t* out_buffer_len);
 err_t credentials_decode(credentials_t* out_credentials, const uint8_t* in_buffer, const uint8_t in_buffer_len);
 err_t credentials_encrypt(const credentials_t* in_credentials, credentials_t* out_credentials);
 err_t credentials_validate(const credentials_t* credentials_db, const credentials_t* credential);

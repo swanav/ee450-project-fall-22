@@ -18,7 +18,7 @@
 
 // Used by client to send credentials to serverM
 // Used by serverM to encode the credentials to send to serverC
-err_t credentials_encode(const credentials_t* in_credentials, uint8_t* out_buffer, const uint8_t out_buffer_size, uint8_t* out_buffer_len) {
+err_t credentials_encode(const credentials_t* in_credentials, uint8_t* out_buffer, const size_t out_buffer_size, uint8_t* out_buffer_len) {
     if (in_credentials == NULL || out_buffer == NULL || out_buffer_len == NULL || out_buffer_size < CREDENTIALS_HEADER_LEN + in_credentials->username_len + in_credentials->password_len) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -29,6 +29,8 @@ err_t credentials_encode(const credentials_t* in_credentials, uint8_t* out_buffe
     memcpy(out_buffer + offset, in_credentials->username, in_credentials->username_len);
     offset += in_credentials->username_len;
     memcpy(out_buffer + offset, in_credentials->password, in_credentials->password_len);
+
+    *out_buffer_len = offset + in_credentials->password_len;
 
     return ERR_OK;
 }
@@ -93,6 +95,10 @@ err_t credentials_encrypt(const credentials_t* in_credentials, credentials_t* ou
     }
 
     return ERR_OK;
+}
+
+uint8_t credentials_len(const credentials_t* credentials) {
+    return CREDENTIALS_HEADER_LEN + credentials->username_len + credentials->password_len;
 }
 
 

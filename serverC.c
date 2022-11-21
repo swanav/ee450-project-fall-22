@@ -19,6 +19,7 @@ authentication status.
 #include <arpa/inet.h>
 #include <sys/wait.h>
 
+#include "constants.h"
 #include "log.h"
 #include "messages.h"
 #include "networking.h"
@@ -26,67 +27,48 @@ authentication status.
 #include "utils.h"
 #include "data/credentials.h"
 
+#include "protocol.h"
+
 #define CREDENTIALS_FILE "cred.txt"
-
-typedef uint8_t auth_status_t;
-
 
 static udp_ctx_t* udp_peer_ctx;
 static credentials_t* credentials_db = NULL;
 
-typedef enum {
-    AUTH_REQUEST_VALIDATE = 0,
-    AUTH_REQUEST_END
-} auth_request_type_t;
-
-typedef enum {
-    AUTH_RESPONSE_VALIDATE = 0,
-    AUTH_RESPONSE_END
-} auth_response_type_t;
-
-
-static auth_request_type_t get_request_type(udp_dgram_t* datagram) {
-    if (datagram->data_len == 0 || datagram->data[0] >= AUTH_REQUEST_END) {
-        return ERR_REQ_INVALID;
-    }
-    return datagram->data[0];
-}
-
 static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram_t* res_dgram) {
 
-    res_dgram->data_len = 2;
-    res_dgram->data[0] = AUTH_RESPONSE_VALIDATE;
+    uint8_t flags = AUTH_FLAGS_FAILURE;
 
     credentials_t credentials = {0};
-
-    err_t result = credentials_decode(&credentials, (const uint8_t*) req_dgram->data + 1, req_dgram->data_len - 1);
+    err_t result = credentials_decode(&credentials, (const uint8_t*) req_dgram->data + REQUEST_RESPONSE_HEADER_LEN, req_dgram->data_len - REQUEST_RESPONSE_HEADER_LEN);
     if (result == ERR_INVALID_PARAMETERS) {
         LOGEM("Failed to parse authentication request");
-        res_dgram->data[0] = ERR_CREDENTIALS_INVALID_REQUEST;
-        return;
+    } else {
+        LOGI("Received authentication request for user %s", credentials.username);
+        err_t auth_status = credentials_validate(credentials_db, &credentials);
+        if (auth_status == ERR_INVALID_PARAMETERS) {
+            LOGEM("Failed to validate credentials: Invalid Parameters");
+        } else if (auth_status == ERR_CREDENTIALS_USER_NOT_FOUND) {
+            flags |= AUTH_FLAGS_USER_NOT_FOUND;
+        } else if (auth_status == ERR_CREDENTIALS_PASSWORD_MISMATCH) {
+            flags |= AUTH_FLAGS_PASSWORD_MISMATCH;
+        } else if (auth_status == ERR_CREDENTIALS_OK) {
+            flags = AUTH_FLAGS_SUCCESS;
+        }
     }
-
-    auth_status_t auth_status = credentials_validate(credentials_db, &credentials);
-    if (auth_status == ERR_INVALID_PARAMETERS) {
-        LOGEM("Failed to validate credentials: Invalid Parameters");
-        res_dgram->data[0] = ERR_CREDENTIALS_INVALID_REQUEST;
-        return;
-    }
-    res_dgram->data[0] = auth_status;
+    protocol_encode(res_dgram, RESPONSE_TYPE_AUTH, flags, 0, NULL);
 }
 
 static void udp_message_rx_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
     udp_dgram_t resp_dgram = {0};
     
-    auth_request_type_t req_type = get_request_type(req_dgram);
-
-    if (req_type == AUTH_REQUEST_VALIDATE) {
+    request_type_t req_type = protocol_get_request_type(req_dgram);
+    if (req_type == REQUEST_TYPE_AUTH) {
         LOGIM(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
         handle_auth_request_validate(req_dgram, &resp_dgram);
     } else {
+        printf("Request type: %d\n", req_type);
         LOGIM(SERVER_C_MESSAGE_ON_INVALID_REQUEST_RECEIVED);
-        resp_dgram.data[0] = AUTH_RESPONSE_END;
-        resp_dgram.data_len = 1;
+        protocol_encode(&resp_dgram, RESPONSE_TYPE_AUTH, AUTH_FLAGS_FAILURE, 0, NULL);
     }
 
     udp_send(ctx, source, &resp_dgram);
@@ -102,10 +84,15 @@ static void on_server_init(udp_ctx_t* udp) {
     udp->on_tx = udp_message_tx_handler;
 }
 
+static void on_udp_server_init_failure(start_failure_reason_t reason, int error_code) {
+    LOGE(SERVER_C_MESSAGE_ON_BOOTUP_FAILURE, strerror(error_code));
+    exit(1);
+}
+
 int main(int argc, char* argv[]) {
     credentials_db = credentials_init(CREDENTIALS_FILE);
     credentials_print(credentials_db);
-    udp_peer_ctx = udp_start(SERVER_C_UDP_PORT_NUMBER, on_server_init);
+    udp_peer_ctx = udp_start(SERVER_C_UDP_PORT_NUMBER, on_server_init, on_udp_server_init_failure);
     while(1) {
         udp_receive(udp_peer_ctx);
     }

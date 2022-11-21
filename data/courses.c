@@ -97,21 +97,21 @@ course_t* courses_lookup(const course_t* db, const char* course_code) {
     return NULL;
 }
 
-// courses_lookup_category_t courses_lookup_category_from_string(const char* category) {
-//     if (strcmp(category, "CourseCode") == 0) {
-//         return COURSES_LOOKUP_CATEGORY_COURSE_CODE;
-//     } else if (strcmp(category, "Credits") == 0) {
-//         return COURSES_LOOKUP_CATEGORY_CREDITS;
-//     } else if (strcmp(category, "Professor") == 0) {
-//         return COURSES_LOOKUP_CATEGORY_PROFESSOR;
-//     } else if (strcmp(category, "Days") == 0) {
-//         return COURSES_LOOKUP_CATEGORY_DAYS;
-//     } else if (strcmp(category, "CourseName") == 0) {
-//         return COURSES_LOOKUP_CATEGORY_COURSE_NAME;
-//     } else {
-//         return COURSES_LOOKUP_CATEGORY_INVALID;
-//     }
-// }
+courses_lookup_category_t courses_lookup_category_from_string(const char* category) {
+    if (strcmp(category, "CourseCode") == 0) {
+        return COURSES_LOOKUP_CATEGORY_COURSE_CODE;
+    } else if (strcmp(category, "Credits") == 0) {
+        return COURSES_LOOKUP_CATEGORY_CREDITS;
+    } else if (strcmp(category, "Professor") == 0) {
+        return COURSES_LOOKUP_CATEGORY_PROFESSOR;
+    } else if (strcmp(category, "Days") == 0) {
+        return COURSES_LOOKUP_CATEGORY_DAYS;
+    } else if (strcmp(category, "CourseName") == 0) {
+        return COURSES_LOOKUP_CATEGORY_COURSE_NAME;
+    } else {
+        return COURSES_LOOKUP_CATEGORY_INVALID;
+    }
+}
 
 err_t courses_lookup_info(const course_t* course, courses_lookup_category_t category, uint8_t* info_buf, size_t info_buf_size, size_t* info_len) {
     if (course == NULL || info_buf == NULL || info_len == NULL || category >= COURSES_LOOKUP_CATEGORY_INVALID) {
@@ -142,6 +142,109 @@ err_t courses_lookup_info(const course_t* course, courses_lookup_category_t cate
         default:
             return ERR_COURSES_INVALID_PARAMETERS;
     }
+    return ERR_COURSES_OK;
+}
+
+uint8_t courses_flags_from_category(courses_lookup_category_t category) {
+    switch (category) {
+        case COURSES_LOOKUP_CATEGORY_COURSE_CODE:
+            return COURSE_LOOKUP_FLAGS_COURSE_CODE;
+        case COURSES_LOOKUP_CATEGORY_CREDITS:
+            return COURSE_LOOKUP_FLAGS_CREDITS;
+        case COURSES_LOOKUP_CATEGORY_PROFESSOR:
+            return COURSE_LOOKUP_FLAGS_PROFESSOR;
+        case COURSES_LOOKUP_CATEGORY_DAYS:
+            return COURSE_LOOKUP_FLAGS_DAYS;
+        case COURSES_LOOKUP_CATEGORY_COURSE_NAME:
+            return COURSE_LOOKUP_FLAGS_COURSE_NAME;
+        default:
+            return 0;
+    }
+}
+
+courses_lookup_category_t courses_category_from_flags(uint8_t category) {
+    switch (category) {
+        case COURSE_LOOKUP_FLAGS_COURSE_CODE:
+            return COURSES_LOOKUP_CATEGORY_COURSE_CODE;
+        case COURSE_LOOKUP_FLAGS_CREDITS:
+            return COURSES_LOOKUP_CATEGORY_CREDITS;
+        case COURSE_LOOKUP_FLAGS_PROFESSOR:
+            return COURSES_LOOKUP_CATEGORY_PROFESSOR;
+        case COURSE_LOOKUP_FLAGS_DAYS:
+            return COURSES_LOOKUP_CATEGORY_DAYS;
+        case COURSE_LOOKUP_FLAGS_COURSE_NAME:
+            return COURSES_LOOKUP_CATEGORY_COURSE_NAME;
+        default:
+            return COURSES_LOOKUP_CATEGORY_INVALID;
+    }
+}
+
+
+err_t courses_lookup_info_request_encode(courses_lookup_params_t* params, struct __message_t* out_msg) {
+    if (params == NULL || out_msg == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+    uint8_t flags = courses_flags_from_category(params->category);
+    protocol_encode(out_msg, REQUEST_TYPE_COURSES_LOOKUP_INFO, flags, strlen(params->course_code), (uint8_t*) params->course_code);
+    return ERR_COURSES_OK;
+}
+
+err_t courses_lookup_info_request_decode(struct __message_t* msg, courses_lookup_params_t* params) {
+    if (params == NULL || msg == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+    uint8_t type = protocol_get_request_type(msg);
+
+    if (type != REQUEST_TYPE_COURSES_LOOKUP_INFO && type != RESPONSE_TYPE_COURSES_LOOKUP_INFO) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+    bzero(params, sizeof(courses_lookup_params_t));
+    uint8_t flags = 0;
+    uint8_t olen = 0;
+    protocol_decode(msg, NULL, &flags, &olen, sizeof(params->course_code), (uint8_t*) params->course_code);
+    params->category = courses_category_from_flags(flags);
+
+    return ERR_COURSES_OK;
+}
+
+
+err_t courses_lookup_info_response_encode(struct __message_t* out_msg, courses_lookup_params_t* params, uint8_t* info_buffer, uint8_t info_buffer_len) {
+
+    if (params == NULL || out_msg == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+    uint8_t flags = courses_flags_from_category(params->category);
+
+    uint8_t buffer[64];
+    uint8_t buffer_len = 0;
+
+    if (info_buffer != NULL && info_buffer_len > 0 && info_buffer_len <= 62) {
+        buffer_len = info_buffer_len + 2;
+        buffer[0] = strlen(params->course_code);
+        buffer[1] = info_buffer_len;
+        memcpy(buffer + 2, params->course_code, buffer[0]);
+        memcpy(buffer + 2 + buffer[0], info_buffer, buffer[1]);
+        protocol_encode(out_msg, RESPONSE_TYPE_COURSES_LOOKUP_INFO, flags, buffer_len, buffer);
+    }
+
+    return ERR_COURSES_OK;
+}
+
+err_t courses_lookup_info_response_decode(struct __message_t* msg, courses_lookup_params_t* params, uint8_t* info_buffer, uint8_t info_buffer_size, uint8_t* info_len) {
+
+    if (params == NULL || msg == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+    
+
+    // protocol_decode
+    
+
+
     return ERR_COURSES_OK;
 }
 

@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include "../networking/networking.h"
 
-#define SUBMIT_LOGS_FORMAT_ENABLED
-// #define LOG_DEBUG
+// #define SUBMIT_LOGS_FORMAT_ENABLED
+#define LOG_DEBUG
 #ifndef LOG_DEBUG
 #define DLOG 0
 #else
@@ -53,5 +53,6 @@
 #endif // SUBMIT_LOGS_FORMAT_ENABLED
 
 void log_message(struct __message_t message);
+void log_buffer(uint8_t* buffer, uint8_t buffer_len);
 
 #endif // __LOG__H__

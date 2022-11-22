@@ -16,14 +16,16 @@
 typedef uint8_t request_type_t;
 #define REQUEST_TYPE_AUTH                       0x61
 #define REQUEST_TYPE_COURSES_LOOKUP_INFO        0x62
-#define REQUEST_TYPE_COURSES_LOOKUP             0x63
-#define REQUEST_TYPE_END                        0x64
+#define REQUEST_TYPE_COURSES_MULTI_LOOKUP       0x63
+#define REQUEST_TYPE_COURSES_DETAIL_LOOKUP      0x64
+#define REQUEST_TYPE_END                        0x65
 
 typedef uint8_t response_type_t;
 #define RESPONSE_TYPE_AUTH                      0x71
 #define RESPONSE_TYPE_COURSES_LOOKUP_INFO       0x72
-#define RESPONSE_TYPE_COURSES_LOOKUP            0x73
-#define RESPONSE_TYPE_END                       0x74
+#define RESPONSE_TYPE_COURSES_MULTI_LOOKUP      0x73
+#define RESPONSE_TYPE_COURSES_DETAIL_LOOKUP     0x74
+#define RESPONSE_TYPE_END                       0x75
 
 #define REQUEST_RESPONSE_INVALID_TYPE           0x00
 

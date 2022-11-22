@@ -2,6 +2,9 @@
 #include <log.h>
 #include <stdio.h>
 #include <utils.h>
+#include "../protocol.h"
+
+LOG_TAG(courses);
 
 #define SPLIT_TOKEN ",\r\n"
 
@@ -22,7 +25,7 @@ course_t* courses_init(const char* filename) {
         }
         course_t* entry = (course_t*)malloc(sizeof(course_t));
         if (entry == NULL) {
-            LOGEM("Failed to allocate memory for course_t");
+            LOG_ERR("Failed to allocate memory for course_t");
             continue;
         }
         memset(entry, 0, sizeof(course_t));
@@ -68,6 +71,18 @@ void courses_free(course_t* head) {
         entry = next;
     }
 }
+
+void courses_print(course_t* course) {
+    LOG_WARN("%s %s %s %s %d", course->course_code, course->course_name, course->professor, course->days, course->credits);
+}
+
+void courses_printall(course_t* course) {
+    while (course != NULL) {
+        courses_print(course);
+        course = course->next;
+    }
+}
+
 
 // int courses_parse_lookup_request(char* req_string, size_t req_len, courses_lookup_params_t* params) {
 //     char* token = strtok(req_string, SPLIT_TOKEN);
@@ -180,6 +195,32 @@ courses_lookup_category_t courses_category_from_flags(uint8_t category) {
 }
 
 
+err_t courses_details_request_encode(char* course_code, struct __message_t* out_msg) {
+    if (course_code == NULL || out_msg == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+    protocol_encode(out_msg, REQUEST_TYPE_COURSES_DETAIL_LOOKUP, 0, strlen(course_code), course_code);
+    return ERR_COURSES_OK;
+}
+
+err_t courses_details_request_decode(struct __message_t* in_msg, uint8_t* course_code, uint8_t course_code_size) {
+    if (in_msg == NULL || course_code == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+    request_type_t type = protocol_get_request_type(in_msg);
+    if (type != REQUEST_TYPE_COURSES_DETAIL_LOOKUP) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+
+    uint8_t olen = 0;
+    protocol_decode(in_msg, NULL, NULL, &olen, course_code_size, course_code);
+    course_code[olen] = '\0';
+
+    return ERR_COURSES_OK;
+}
+
 err_t courses_lookup_info_request_encode(courses_lookup_params_t* params, struct __message_t* out_msg) {
     if (params == NULL || out_msg == NULL) {
         return ERR_COURSES_INVALID_PARAMETERS;
@@ -208,6 +249,64 @@ err_t courses_lookup_info_request_decode(struct __message_t* msg, courses_lookup
 
     return ERR_COURSES_OK;
 }
+
+// Get length of the words in a sentence
+int get_word_length(char* sentence) {
+    int length = 0;
+    while (*sentence != ' ' && *sentence != '\0') {
+        length++;
+        sentence++;
+    }
+    return length;
+}
+
+err_t courses_lookup_multiple_request_encode(struct __message_t* out_msg, uint8_t course_count, uint8_t* course_buffer, uint8_t course_buffer_size) {
+    if (out_msg == NULL || course_buffer == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+    uint8_t* ptr = course_buffer;
+    uint8_t buffer[64];
+    uint8_t buffer_len = 0;
+    buffer[0] = course_count;
+    buffer_len += 1;
+    for (uint8_t i = 0; i < course_count; i++) {
+        // get length of words and copy into buffer
+        int length = get_word_length((char*) ptr);
+        buffer[buffer_len] = length;
+        buffer_len += 1;
+        memcpy(buffer + buffer_len, ptr, length);
+        buffer_len += length;
+        ptr += length;
+        // skip space
+        ptr += 1;
+    }
+    protocol_encode(out_msg, REQUEST_TYPE_COURSES_MULTI_LOOKUP, 0, buffer_len, buffer);
+    return ERR_COURSES_OK;
+}
+
+err_t courses_lookup_multiple_request_decode(struct __message_t* in_msg, uint8_t* course_count, uint8_t* buffer, uint8_t buffer_len) {
+    if (in_msg == NULL || buffer == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+    uint8_t type = protocol_get_request_type(in_msg);
+    if (type != REQUEST_TYPE_COURSES_MULTI_LOOKUP) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+
+    uint8_t data_buffer[64];
+    uint8_t olen = 0;    
+
+    protocol_decode(in_msg, NULL, NULL, &olen, sizeof(data_buffer), data_buffer);
+    *course_count = data_buffer[0];
+    memcpy(buffer, data_buffer + 1, olen - 1);
+
+
+    return ERR_COURSES_OK;
+}
+
+// err_t courses_lookup_multiple_response_encode()
 
 
 err_t courses_lookup_info_response_encode_error(struct __message_t* out_msg, courses_lookup_params_t* params, uint8_t error_code) {
@@ -280,7 +379,7 @@ err_t courses_lookup_info_response_encode(struct __message_t* out_msg, courses_l
         buffer_offset += buffer[1];
         buffer_len = buffer_offset;
         protocol_encode(out_msg, RESPONSE_TYPE_COURSES_LOOKUP_INFO, flags, buffer_len, buffer);
-        log_buffer(buffer, buffer_len);
+        LOG_BUFFER(buffer, buffer_len);
     }
 
     return ERR_COURSES_OK;
@@ -301,7 +400,7 @@ err_t courses_lookup_info_response_decode(struct __message_t* msg, courses_looku
     uint8_t output_data_buffer_len = 0;
     
     protocol_decode(msg, NULL, &flags, &output_data_buffer_len, sizeof(output_data_buffer), output_data_buffer);    
-    log_buffer(output_data_buffer, output_data_buffer_len);
+    LOG_BUFFER(output_data_buffer, output_data_buffer_len);
 
     params->category = courses_category_from_flags(flags);
     memcpy(params->course_code, output_data_buffer + 2, output_data_buffer[0]);
@@ -324,48 +423,75 @@ err_t courses_lookup_decode(udp_dgram_t* req_dgram, courses_lookup_params_t* par
     return ERR_COURSES_OK;
 }
 
-err_t courses_summary_decode(udp_dgram_t* req_dgram, courses_lookup_params_t* params) {
-    if (req_dgram == NULL || params == NULL || req_dgram->data_len < 2) {
+err_t courses_details_response_decode(udp_dgram_t* req_dgram, course_t* course) {
+    if (req_dgram == NULL || course == NULL) {
         return ERR_COURSES_INVALID_PARAMETERS;
     }
 
-    memcpy(params->course_code, req_dgram->data + 2, req_dgram->data_len - 2);
+    uint8_t buffer[128];
+    uint8_t buffer_len = 0;
+
+    protocol_decode(req_dgram, NULL, NULL, &buffer_len, sizeof(buffer), buffer);
+
+    LOG_BUFFER(buffer, buffer_len);
+
+    uint8_t len = 0;
+    uint8_t offset = 0;
+
+    len = buffer[offset++];
+    memcpy(course->course_code, buffer + offset, len);
+    course->course_code[len] = '\0';
+    offset += len;
+
+    len = buffer[offset++];
+    memcpy(course->course_name, buffer + offset, len);
+    course->course_name[len] = '\0';
+    offset += len;
+
+    len = buffer[offset++];
+    memcpy(course->professor, buffer + offset, len);
+    course->professor[len] = '\0';
+    offset += len;
+
+    len = buffer[offset++];
+    memcpy(course->days, buffer + offset, len);
+    course->days[len] = '\0';
+    offset += len;
+
+    course->credits = buffer[++offset];
 
     return ERR_COURSES_OK;
 }
 
-err_t courses_summary_encode(const course_t* course, uint8_t* buffer, size_t buffer_len, size_t* encoded_len) {
-    if (course == NULL || buffer == NULL || encoded_len == NULL) {
+err_t courses_details_response_encode(const course_t* course, struct __message_t* out_msg) {
+    if (course == NULL || out_msg == NULL) {
         return ERR_COURSES_INVALID_PARAMETERS;
     }
 
+    uint8_t buffer[256];
     size_t offset = 0;
     
-    buffer[offset++] = 2 + strlen(course->course_code);
-    buffer[offset++] = COURSES_LOOKUP_CATEGORY_COURSE_CODE;
+    buffer[offset++] = strlen(course->course_code);
     memcpy(buffer + offset, course->course_code, strlen(course->course_code));
     offset += strlen(course->course_code);
 
-    buffer[offset++] = 2 + strlen(course->course_name);
-    buffer[offset++] = COURSES_LOOKUP_CATEGORY_COURSE_NAME;
+    buffer[offset++] = strlen(course->course_name);
     memcpy(buffer + offset, course->course_name, strlen(course->course_name));
     offset += strlen(course->course_name);
 
-    buffer[offset++] = 2 + strlen(course->professor);
-    buffer[offset++] = COURSES_LOOKUP_CATEGORY_PROFESSOR;
+    buffer[offset++] = strlen(course->professor);
     memcpy(buffer + offset, course->professor, strlen(course->professor));
     offset += strlen(course->professor);
 
-    buffer[offset++] = 2 + strlen(course->days);
-    buffer[offset++] = COURSES_LOOKUP_CATEGORY_DAYS;
+    buffer[offset++] = strlen(course->days);
     memcpy(buffer + offset, course->days, strlen(course->days));
     offset += strlen(course->days);
 
-    buffer[offset++] = 2 + 1;
-    buffer[offset++] = COURSES_LOOKUP_CATEGORY_CREDITS;
+    buffer[offset++] = 1;
     buffer[offset++] = course->credits;
 
-    *encoded_len = offset;
+    protocol_encode(out_msg, RESPONSE_TYPE_COURSES_DETAIL_LOOKUP, 0, offset, buffer);
+
     return ERR_COURSES_OK;
 }
 

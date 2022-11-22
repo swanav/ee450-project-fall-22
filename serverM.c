@@ -9,6 +9,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 #include "constants.h"
 #include "credentials.h"
@@ -20,12 +22,19 @@
 #include "tcp_server.h"
 #include "utils.h"
 
+LOG_TAG("serverM");
+
 static udp_ctx_t* udp = NULL;
 static tcp_server_t* tcp = NULL;
 
 static udp_endpoint_t serverC; 
 static udp_endpoint_t serverCS; 
 static udp_endpoint_t serverEE;
+
+course_t courses_details[15];
+int courses_index = 0;
+
+static sem_t semaphore;
 
 static void authenticate_user(credentials_t* user, tcp_endpoint_t* src) {
     if (udp) {
@@ -40,7 +49,7 @@ static void authenticate_user(credentials_t* user, tcp_endpoint_t* src) {
         protocol_encode(&dgram, REQUEST_TYPE_AUTH, 0, data_buffer_len, data_buffer);
 
         udp_send(udp, &serverC, &dgram);
-        LOGIM(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
+        LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
     }
 }
 
@@ -52,19 +61,19 @@ static void on_auth_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp
     protocol_decode(sgmnt, NULL, NULL, &buffer_size, sizeof(buffer), buffer);
     credentials_decode(&credentials, buffer, buffer_size);
 
-    LOGI(SERVER_M_MESSAGE_ON_AUTH_REQUEST_RECEIVED, credentials.username, ntohs(src->addr.sin_port));
+    LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_RECEIVED, credentials.username, ntohs(src->addr.sin_port));
 
     authenticate_user(&credentials, src);
 }
 
 static void on_auth_response_received(udp_dgram_t* req_dgram) {
     tcp_server_send(tcp, tcp->endpoints, req_dgram);
-    LOGIM(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
+    LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
 }
 
 static void on_course_lookup_info_response_received(udp_dgram_t* req_dgram) {
     tcp_server_send(tcp, tcp->endpoints, req_dgram);
-    LOGIM(SERVER_M_MESSAGE_ON_RESULT_FORWARDED);
+    LOG_INFO(SERVER_M_MESSAGE_ON_RESULT_FORWARDED);
 }
 
 static void request_course_lookup_info(courses_lookup_params_t* params) {
@@ -73,41 +82,108 @@ static void request_course_lookup_info(courses_lookup_params_t* params) {
         courses_lookup_info_request_encode(params, &dgram);
         if (strncasecmp(params->course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverEE, &dgram);
-            LOGI(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "EE");
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "EE");
         } else if (strncasecmp(params->course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverCS, &dgram);
-            LOGI(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "CS");
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "CS");
         } else {
-            LOGW("Invalid course code: %s", params->course_code);
+            LOG_WARN("Invalid course code: %s", params->course_code);
+        }
+    }
+}
+
+static void request_course_details(uint8_t* course_code, uint8_t course_code_len) {
+    if (udp) {
+        udp_dgram_t dgram = {0};
+        courses_details_request_encode(course_code, &dgram);
+        if (strncasecmp(course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
+            udp_send(udp, &serverEE, &dgram);
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "EE");
+        } else if (strncasecmp(course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
+            udp_send(udp, &serverCS, &dgram);
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "CS");
+        } else {
+            LOG_WARN("Invalid course code: %s", course_code);
         }
     }
 }
 
 static void on_course_lookup_info_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* req_sgmnt) {
-    LOGI("Received course lookup info request from " IP_ADDR_FORMAT, IP_ADDR(src));
-    log_message(*req_sgmnt);
+    LOG_INFO("Received course lookup info request from " IP_ADDR_FORMAT, IP_ADDR(src));
     courses_lookup_params_t params = {0};
     courses_lookup_info_request_decode(req_sgmnt, &params);
-    LOGI(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "CS", params.course_code, courses_category_string_from_enum(params.category), ntohs(src->addr.sin_port));
-    // LOGI("Course lookup info request: %s %s", courses_category_string_from_enum(params.category), params.course_code);
+    LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "CS", params.course_code, courses_category_string_from_enum(params.category), ntohs(src->addr.sin_port));
     request_course_lookup_info(&params);
 }
+
+static pthread_t thread;
+
+void* multi_request_thread(void* params) {
+    LOG_INFO("Starting multi request thread");
+    tcp_sgmnt_t* req_sgmnt = (tcp_sgmnt_t*) params;
+
+    uint8_t courses_length = 0;
+    uint8_t buffer[128] = {0};
+    courses_lookup_multiple_request_decode(req_sgmnt, &courses_length, buffer, sizeof(buffer));
+    LOG_INFO("Received multi request for %d courses", courses_length);
+    LOG_BUFFER(req_sgmnt->data, req_sgmnt->data_len);
+
+    uint8_t offset = 0;
+
+    char course_code[10] = {0};
+    uint8_t course_code_len = 0;
+
+    for (int i = 0; i < courses_length; i++) {
+        courses_index = i;
+        course_code_len = buffer[offset++];
+        memcpy(course_code, buffer + offset, course_code_len);
+        offset += course_code_len;
+        LOG_WARN("Requesting course details for %.*s", course_code_len, course_code);
+        request_course_details(course_code, course_code_len);
+        sem_wait(&semaphore);
+    }
+
+    LOG_INFO("Multi request thread finished");
+
+    for (int i = 0; i < courses_length; i++) {
+        courses_print(&courses_details[i]);
+    }
+
+    tcp_server_send(tcp, tcp->endpoints, courses_details);
+
+    return NULL;
+}
+
+static void on_course_lookup_multi_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* req_sgmnt) {
+    LOG_INFO("Received course lookup multiple request from " IP_ADDR_FORMAT, IP_ADDR(src));
+    pthread_create(&thread, NULL, multi_request_thread, (void*) req_sgmnt);
+}
+
 
 static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
     uint8_t response_type = protocol_get_request_type(req_dgram);
     if (response_type == RESPONSE_TYPE_AUTH) {
-        LOGI(SERVER_M_MESSAGE_ON_AUTH_RESULT_RECEIVED, ntohs(source->addr.sin_port));
+        LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_RESULT_RECEIVED, ntohs(source->addr.sin_port));
         on_auth_response_received(req_dgram);
     } else if (response_type == RESPONSE_TYPE_COURSES_LOOKUP_INFO) {
-        LOGIM("Received course lookup info response.");
+        LOG_INFO("Received course lookup info response.");
         on_course_lookup_info_response_received(req_dgram);
+    } else if (response_type == RESPONSE_TYPE_COURSES_DETAIL_LOOKUP) {
+        LOG_INFO("Received course detail response.");
+        course_t course = {0};
+        if (courses_details_response_decode(req_dgram, &course) == ERR_COURSES_OK) {
+            courses_print(&course);
+            memcpy(courses_details + courses_index, &course, sizeof(course_t));
+        }
+        sem_post(&semaphore);
     } else {
-        LOGIM("SERVER_M_MESSAGE_ON_UNKNOWN_REQUEST_TYPE");
+        LOG_ERR("SERVER_M_MESSAGE_ON_UNKNOWN_REQUEST_TYPE");
+        sem_post(&semaphore);
     }
 }
 
 static void on_udp_server_tx(udp_ctx_t* udp, udp_endpoint_t* dest, udp_dgram_t* datagram) {
-    // LOGIM(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
+    // LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
 }
 
 static void on_tcp_server_rx(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* req_sgmnt) {
@@ -119,14 +195,17 @@ static void on_tcp_server_rx(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t
         case REQUEST_TYPE_COURSES_LOOKUP_INFO:
             on_course_lookup_info_request_received(tcp, src, req_sgmnt);
             break;
+        case REQUEST_TYPE_COURSES_MULTI_LOOKUP:
+            on_course_lookup_multi_request_received(tcp, src, req_sgmnt);
+            break;
         default:
-            LOGE("Unknown type: %d", request_type);
+            LOG_ERR("Unknown type: %d", request_type);
             break;
     }
 }
 
 static void on_tcp_server_tx(tcp_server_t* tcp, tcp_endpoint_t* dest, tcp_sgmnt_t* res_sgmnt) {
-    LOGIM(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
+    LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
 }
 
 static void on_udp_server_init(udp_ctx_t* udp) {
@@ -140,12 +219,12 @@ static void on_tcp_server_init(tcp_server_t* tcp) {
 }
 
 // static void on_tcp_server_init_failure(start_failure_reason_t reason, int error_code) {
-//     LOGE(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, strerror(error_code));
+//     LOG_ERR(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, strerror(error_code));
 //     exit(1);
 // }
 
 static void on_udp_server_init_failure(start_failure_reason_t reason, int error_code) {
-    LOGE(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, strerror(error_code));
+    LOG_ERR(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, strerror(error_code));
     exit(1);
 }
 
@@ -176,24 +255,26 @@ static void tick(tcp_server_t* tcp, udp_ctx_t* udp) {
 }
 int main() {
 
+    sem_init(&semaphore, 0, 0);
+
     SERVER_ADDR_PORT(serverC, SERVER_C_UDP_PORT_NUMBER);
     SERVER_ADDR_PORT(serverCS, SERVER_CS_UDP_PORT_NUMBER);
     SERVER_ADDR_PORT(serverEE, SERVER_EE_UDP_PORT_NUMBER);
 
     udp = udp_start(SERVER_M_UDP_PORT_NUMBER, on_udp_server_init, on_udp_server_init_failure);
     if (!udp) {
-        // LOGEM(SERVER_M_MESSAGE_ON_STARTUP_ERROR);
-        LOGEM("serverM: Error starting UDP server");
+        // LOG_ERR(SERVER_M_MESSAGE_ON_STARTUP_ERROR);
+        LOG_ERR("serverM: Error starting UDP server");
         return 1;
     }
 
     tcp = tcp_server_start(SERVER_M_TCP_PORT_NUMBER, on_tcp_server_init);
     if (!tcp) {
-        LOGEM("serverM: Error starting TCP server");
+        LOG_ERR("serverM: Error starting TCP server");
         return 1;
     }
 
-    LOGIM(SERVER_M_MESSAGE_ON_BOOTUP);
+    LOG_INFO(SERVER_M_MESSAGE_ON_BOOTUP);
 
 
     while(1) {

@@ -15,7 +15,7 @@ serverEE: serverEE.c utils/** networking/** data/** out_dir
 	gcc -g -Wall -Idata -Iutils -Inetworking -o $(OUTPUT_DIR)/serverEE serverEE.c serverSub.c protocol.c utils/**.c networking/**.c data/**.c
 
 serverM: serverM.c utils/** networking/** out_dir
-	gcc -g -Wall -Idata -Iutils -Inetworking -o $(OUTPUT_DIR)/serverM serverM.c protocol.c utils/**.c networking/**.c data/**.c
+	gcc -g -Wall -Idata -Iutils -Inetworking -o $(OUTPUT_DIR)/serverM serverM.c protocol.c utils/**.c networking/**.c data/**.c -lpthread
 
 out_dir:
 	mkdir -p $(OUTPUT_DIR)

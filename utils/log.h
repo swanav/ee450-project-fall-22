@@ -1,58 +1,68 @@
-#ifndef __LOG__H__
-#define __LOG__H__
+#ifndef _LOG_H_
+#define _LOG_H_
 
-#include <stdio.h>
-#include "../networking/networking.h"
+#ifndef ENABLE_DEBUG_LOGS
+#define ENABLE_DEBUG_LOGS 1
+#endif // ENABLE_DEBUG_LOGS
 
-#define SUBMIT_LOGS_FORMAT_ENABLED
-// #define LOG_DEBUG
-#ifndef LOG_DEBUG
-#define DLOG 0
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#if ENABLE_DEBUG_LOGS
+#define LOG_TAG(x) __attribute__((unused)) static const char* TAG = #x;
+
+typedef enum {
+	LOG_LVL_OFF,
+	LOG_LVL_ERROR,
+	LOG_LVL_WARNING,
+	LOG_LVL_INFO,
+	LOG_LVL_DEBUG,
+	LOG_LVL_VERBOSE,
+} LogLevel_t;
+
+#define LOG_INFO(...)           log_text(LOG_LVL_INFO, TAG, __VA_ARGS__)
+#define LOG_WARN(...)           log_text(LOG_LVL_WARNING, TAG, __VA_ARGS__)
+#define LOG_ERR(...)            log_text(LOG_LVL_ERROR, TAG, __VA_ARGS__)
+#define LOG_DBG(...)            log_text(LOG_LVL_DEBUG, TAG, __VA_ARGS__)
+#define LOG_VERBOSE(...)        log_text(LOG_LVL_VERBOSE, TAG, __VA_ARGS__)
+#define LOG_BUFFER(buffer, len) log_dbg_buffer(TAG, #buffer, buffer, len)
+
+#define LOG_FUNCTION_ENTRY()             LOG_VERBOSE("Entering %s", __func__)
+#define LOG_FUNCTION_ENTRY_DEVICE(index) LOG_VERBOSE("Entering %s for device index %d", __func__, index)
+#define LOG_FUNCTION_EXIT()              LOG_VERBOSE("Exiting  %s", __func__)
+
+#define LOG_VAR_NULL(var)  LOG_WARN("%s: %s -> null", __func__, #var)
+#define LOG_VAR_STR(var)   LOG_DBG("%s: %s -> %s", __func__, #var, var ? var : "null")
+#define LOG_VAR_INT(var)   LOG_DBG("%s: %s -> %d", __func__, #var, var)
+#define LOG_VAR_HEX(var)   LOG_DBG("%s: %s -> 0x%04X", __func__, #var, var)
+#define LOG_VAR_LONG(var)  LOG_DBG("%s: %s -> %ld", __func__, #var, var)
+#define LOG_VAR_FLOAT(var) LOG_DBG("%s: %s -> %f", __func__, #var, var)
+
+void log_text(const LogLevel_t logLevel, const char* tag, const char* format, ...);
+void log_dbg_buffer(const char* tag, const char* buffer_name, const uint8_t* buffer, size_t len);
 #else
-#define DLOG 1
+#define LOG_TAG(x)
+
+#define LOG_INIT()
+#define LOG_INFO(...)
+#define LOG_WARN(...)
+#define LOG_ERR(...)
+#define LOG_DBG(...)
+#define LOG_VERBOSE(...)
+#define LOG_BUFFER(...)
+
+#define LOG_FUNCTION_ENTRY()
+#define LOG_FUNCTION_ENTRY_DEVICE(index)
+#define LOG_FUNCTION_EXIT()
+
+#define LOG_VAR_NULL(arg)
+#define LOG_VAR_STR(var)
+#define LOG_VAR_INT(var)
+#define LOG_VAR_HEX(var)
+#define LOG_VAR_LONG(var)
+#define LOG_VAR_FLOAT(var)
+
 #endif
 
-#define LOGE(format, ...) LOG_E(E, format, __VA_ARGS__)
-
-#define LOGI(format, ...) LOG(I, format, __VA_ARGS__)
-#if DLOG
-#define LOGW(format, ...) LOG_E(W, format, __VA_ARGS__)
-#define LOGD(format, ...) LOG(D, format, __VA_ARGS__)
-#define LOGV(format, ...) LOG(V, format, __VA_ARGS__)
-#else
-#define LOGW(format, ...)
-#define LOGD(format, ...)
-#define LOGV(format, ...)
-#endif
-
-#define LOGEM(message)    LOG_EM(E, message)
-
-#define LOGIM(message)    LOGM(I, message)
-#if DLOG
-#define LOGWM(message)    LOG_EM(W, message)
-#define LOGDM(message)    LOGM(D, message)
-#define LOGVM(message)    LOGM(V, message)
-#else
-#define LOGWM(message)
-#define LOGDM(message)
-#define LOGVM(message)
-#endif
-
-#ifdef SUBMIT_LOGS_FORMAT_ENABLED
-#define LOG_EM(level, message) fprintf(stderr, "%s\r\n", message)
-#define LOGM(level, message)   fprintf(stdout, "%s\r\n", message)
-
-#define LOG_E(level, format, ...) fprintf(stderr, format "\r\n", __VA_ARGS__)
-#define LOG(level, format, ...)   fprintf(stdout, format "\r\n", __VA_ARGS__)
-#else
-#define LOG_EM(level, message) fprintf(stderr, #level " | %*s | " " %s " "\r\n", -10, __FILE__, message)
-#define LOGM(level, message)   fprintf(stdout, #level " | %*s | " " %s " "\r\n", -10, __FILE__, message)
-
-#define LOG_E(level, format, ...) fprintf(stderr, #level " | %*s | " format "\r\n", -10, __FILE__, __VA_ARGS__)
-#define LOG(level, format, ...)   fprintf(stdout, #level " | %*s | " format "\r\n", -10, __FILE__, __VA_ARGS__)
-#endif // SUBMIT_LOGS_FORMAT_ENABLED
-
-void log_message(struct __message_t message);
-void log_buffer(uint8_t* buffer, uint8_t buffer_len);
-
-#endif // __LOG__H__
+#endif // _LOG_H_

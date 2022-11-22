@@ -6,6 +6,8 @@
 #include "log.h"
 #include "utils.h"
 
+LOG_TAG(credentials);
+
 #define CREDENTIALS_USERNAME_LEN_OFFSET 0
 #define CREDENTIALS_PASSWORD_LEN_OFFSET 1
 
@@ -65,7 +67,7 @@ static uint8_t shift_char(uint8_t c, int shift) {
 
 static err_t encrypt_buffer(const uint8_t* plaintext, const size_t plaintext_len, uint8_t* ciphertext_buffer, const size_t ciphertext_buffer_len, uint8_t* ciphertext_len) {
     if (ciphertext_buffer_len < plaintext_len) {
-        LOGW("ciphertext buffer must be equal to or larger than %d bytes", (int) plaintext_len);
+        LOG_WARN("ciphertext buffer must be equal to or larger than %d bytes", (int) plaintext_len);
         return ERR_INVALID_PARAMETERS;
     }
 
@@ -124,14 +126,14 @@ credentials_t* credentials_init(const char* filename) {
 
         credentials_t* ptr = malloc(sizeof(credentials_t));
         if (ptr == NULL) {
-            LOGEM("Failed to allocate memory for credentials");
+            LOG_ERR("Failed to allocate memory for credentials");
             return NULL;
         }
         bzero(ptr, sizeof(credentials_t));
 
         ptr->username_len = strlen(token);
         if (ptr->username_len > CREDENTIALS_MAX_USERNAME_LEN) {
-            LOGEM("Username is too long");
+            LOG_ERR("Username is too long");
             return NULL;
         }
         memcpy(ptr->username, token, ptr->username_len);
@@ -143,7 +145,7 @@ credentials_t* credentials_init(const char* filename) {
 
         ptr->password_len = strlen(token);
         if (ptr->password_len > CREDENTIALS_MAX_PASSWORD_LEN) {
-            LOGEM("Password is too long");
+            LOG_ERR("Password is too long");
             return NULL;
         }
         memcpy(ptr->password, token, ptr->password_len);
@@ -170,7 +172,7 @@ void credentials_free(credentials_t* credentials) {
 
 void credentials_print(const credentials_t* credentials) {
     while (credentials != NULL) {
-        LOGV("Username: %s, Password: %s", credentials->username, credentials->password);
+        LOG_VERBOSE("Username: %s, Password: %s", credentials->username, credentials->password);
         credentials = credentials->next;
     }
 }

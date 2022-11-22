@@ -49,7 +49,7 @@ void udp_stop(udp_ctx_t* udp) {
 
 void udp_receive(udp_ctx_t* udp) {
     if (udp != NULL) {
-        LOG_DBG("Waiting for a UDP Datagram");
+        // LOG_DBG("Waiting for a UDP Datagram");
         udp_endpoint_t src = {0};
         src.addr_len = sizeof(src.addr);
         udp_dgram_t dgram = {0};
@@ -58,7 +58,7 @@ void udp_receive(udp_ctx_t* udp) {
         if (dgram.data_len < 0) {
             LOG_ERR("Failed to receive UDP Datagram. Error: %s.", strerror(errno));
         } else {
-            LOG_DBG("Received UDP Datagram (%d bytes) from %s:%d", dgram.data_len, inet_ntoa(src.addr.sin_addr), ntohs(src.addr.sin_port));
+            // LOG_DBG("Received UDP Datagram (%d bytes) from %s:%d", dgram.data_len, inet_ntoa(src.addr.sin_addr), ntohs(src.addr.sin_port));
             udp->on_rx(udp, &src, &dgram);
         }
     }
@@ -66,7 +66,7 @@ void udp_receive(udp_ctx_t* udp) {
 
 void udp_send(udp_ctx_t* udp, udp_endpoint_t* dst, udp_dgram_t* dgram) {
     if (udp != NULL && dst != NULL && dgram != NULL) {
-        LOG_DBG("Sending UDP Datagram (%ld bytes) to "IP_ADDR_FORMAT, dgram->data_len, IP_ADDR(dst));
+        // LOG_DBG("Sending UDP Datagram (%ld bytes) to "IP_ADDR_FORMAT, dgram->data_len, IP_ADDR(dst));
         if (sendto(udp->sd, dgram->data, dgram->data_len, 0, (struct sockaddr*)&dst->addr, dst->addr_len) < 0) {
             LOG_ERR("Failed to send UDP Datagram. Error: %s.", strerror(errno));
         } else {

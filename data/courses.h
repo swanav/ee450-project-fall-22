@@ -45,6 +45,9 @@ err_t courses_lookup_multiple_request_decode(struct __message_t* out_msg, uint8_
 // err_t courses_lookup_multiple_response_encode(struct __message_t* out_msg, uint8_t course_count, uint8_t* buffer, uint8_t buffer_len);
 // err_t courses_lookup_multiple_response_encode(struct __message_t* out_msg, uint8_t course_count, uint8_t* buffer, uint8_t buffer_len);
 
+err_t courses_lookup_multiple_response_encode(struct __message_t* out_msg, course_t* courses);
+course_t* courses_lookup_multiple_response_decode(struct __message_t* in_msg);
+
 err_t courses_details_response_encode(const course_t* course, struct __message_t* out_msg);
 err_t courses_details_response_decode(udp_dgram_t* req_dgram, course_t* course);
 

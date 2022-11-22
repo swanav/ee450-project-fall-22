@@ -31,8 +31,7 @@ static udp_endpoint_t serverC;
 static udp_endpoint_t serverCS; 
 static udp_endpoint_t serverEE;
 
-course_t courses_details[15];
-int courses_index = 0;
+course_t* multi_course_response = NULL;
 
 static sem_t semaphore;
 
@@ -118,6 +117,14 @@ static void on_course_lookup_info_request_received(tcp_server_t* tcp, tcp_endpoi
 
 static pthread_t thread;
 
+static void drop_linked_list(course_t* ptr) {
+    while (ptr) {
+        course_t* next = ptr->next;
+        free(ptr);
+        ptr = next;
+    }
+}
+
 void* multi_request_thread(void* params) {
     LOG_INFO("Starting multi request thread");
     tcp_sgmnt_t* req_sgmnt = (tcp_sgmnt_t*) params;
@@ -126,30 +133,38 @@ void* multi_request_thread(void* params) {
     uint8_t buffer[128] = {0};
     courses_lookup_multiple_request_decode(req_sgmnt, &courses_length, buffer, sizeof(buffer));
     LOG_INFO("Received multi request for %d courses", courses_length);
-    LOG_BUFFER(req_sgmnt->data, req_sgmnt->data_len);
 
     uint8_t offset = 0;
 
     char course_code[10] = {0};
     uint8_t course_code_len = 0;
 
+    multi_course_response = NULL;
+
     for (int i = 0; i < courses_length; i++) {
-        courses_index = i;
         course_code_len = buffer[offset++];
         memcpy(course_code, buffer + offset, course_code_len);
         offset += course_code_len;
-        LOG_WARN("Requesting course details for %.*s", course_code_len, course_code);
+        LOG_DBG("Requesting course details for %.*s", course_code_len, course_code);
         request_course_details(course_code, course_code_len);
         sem_wait(&semaphore);
     }
 
     LOG_INFO("Multi request thread finished");
 
-    for (int i = 0; i < courses_length; i++) {
-        courses_print(&courses_details[i]);
-    }
+    courses_printall(multi_course_response);
 
-    tcp_server_send(tcp, tcp->endpoints, courses_details);
+    LOG_INFO("Printed all courses");
+
+    tcp_sgmnt_t sgmnt = {0};
+
+    courses_lookup_multiple_response_encode(&sgmnt, multi_course_response);
+
+    tcp_server_send(tcp, tcp->endpoints, &sgmnt);
+
+    course_t* ptr = multi_course_response;
+    drop_linked_list(ptr);
+    multi_course_response = NULL;
 
     return NULL;
 }
@@ -159,6 +174,19 @@ static void on_course_lookup_multi_request_received(tcp_server_t* tcp, tcp_endpo
     pthread_create(&thread, NULL, multi_request_thread, (void*) req_sgmnt);
 }
 
+course_t* insert_to_end_of_linked_list(course_t* list, course_t* item) {
+    item->next = NULL;
+    if (list == NULL) {
+        list = item;
+    } else {
+        course_t* ptr = list;
+        while (ptr->next) {
+            ptr = ptr->next;
+        }
+        ptr->next = item;
+    }
+    return list;
+}
 
 static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
     uint8_t response_type = protocol_get_request_type(req_dgram);
@@ -170,10 +198,10 @@ static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t
         on_course_lookup_info_response_received(req_dgram);
     } else if (response_type == RESPONSE_TYPE_COURSES_DETAIL_LOOKUP) {
         LOG_INFO("Received course detail response.");
-        course_t course = {0};
-        if (courses_details_response_decode(req_dgram, &course) == ERR_COURSES_OK) {
-            courses_print(&course);
-            memcpy(courses_details + courses_index, &course, sizeof(course_t));
+        course_t* course = calloc(1, sizeof(course_t));
+        if (courses_details_response_decode(req_dgram, course) == ERR_COURSES_OK) {
+            courses_print(course);
+            multi_course_response = insert_to_end_of_linked_list(multi_course_response, course);
         }
         sem_post(&semaphore);
     } else {

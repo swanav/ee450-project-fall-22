@@ -199,7 +199,7 @@ err_t courses_details_request_encode(char* course_code, struct __message_t* out_
     if (course_code == NULL || out_msg == NULL) {
         return ERR_COURSES_INVALID_PARAMETERS;
     }
-    protocol_encode(out_msg, REQUEST_TYPE_COURSES_DETAIL_LOOKUP, 0, strlen(course_code), course_code);
+    protocol_encode(out_msg, REQUEST_TYPE_COURSES_DETAIL_LOOKUP, 0, strlen(course_code), (uint8_t*) course_code);
     return ERR_COURSES_OK;
 }
 
@@ -306,8 +306,60 @@ err_t courses_lookup_multiple_request_decode(struct __message_t* in_msg, uint8_t
     return ERR_COURSES_OK;
 }
 
-// err_t courses_lookup_multiple_response_encode()
+uint8_t course_details_encode(course_t* course, uint8_t* buffer, uint8_t buffer_size) {
+    uint8_t len = 0;
+    uint8_t offset = 0;
 
+    len = buffer[offset++];
+    memcpy(course->course_code, buffer + offset, len);
+    course->course_code[len] = '\0';
+    offset += len;
+
+    len = buffer[offset++];
+    memcpy(course->course_name, buffer + offset, len);
+    course->course_name[len] = '\0';
+    offset += len;
+
+    len = buffer[offset++];
+    memcpy(course->professor, buffer + offset, len);
+    course->professor[len] = '\0';
+    offset += len;
+
+    len = buffer[offset++];
+    memcpy(course->days, buffer + offset, len);
+    course->days[len] = '\0';
+    offset += len;
+
+    course->credits = buffer[++offset];
+
+    return offset + 1;
+}
+
+err_t courses_lookup_multiple_response_encode(struct __message_t* out_msg, course_t* courses) {
+    if (out_msg == NULL || courses == NULL) {
+        return ERR_COURSES_INVALID_PARAMETERS;
+    }
+    protocol_encode(out_msg, RESPONSE_TYPE_COURSES_MULTI_LOOKUP, 0, 0, NULL);
+
+    
+
+    return ERR_COURSES_OK;
+}
+
+course_t* courses_lookup_multiple_response_decode(struct __message_t* in_msg) {
+    if (in_msg == NULL) {
+        return NULL;
+    }
+
+    uint8_t type = protocol_get_request_type(in_msg);
+    if (type != RESPONSE_TYPE_COURSES_MULTI_LOOKUP) {
+        return NULL;
+    }
+
+
+
+    return NULL;
+}
 
 err_t courses_lookup_info_response_encode_error(struct __message_t* out_msg, courses_lookup_params_t* params, uint8_t error_code) {
     if (params == NULL || out_msg == NULL) {
@@ -432,8 +484,6 @@ err_t courses_details_response_decode(udp_dgram_t* req_dgram, course_t* course) 
     uint8_t buffer_len = 0;
 
     protocol_decode(req_dgram, NULL, NULL, &buffer_len, sizeof(buffer), buffer);
-
-    LOG_BUFFER(buffer, buffer_len);
 
     uint8_t len = 0;
     uint8_t offset = 0;

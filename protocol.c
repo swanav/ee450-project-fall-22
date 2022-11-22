@@ -37,3 +37,7 @@ request_type_t protocol_get_request_type(struct __message_t* message) {
 uint8_t protocol_get_payload_len(struct __message_t* message) {
     return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? REQUEST_RESPONSE_INVALID_TYPE : message->data[REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET];
 }
+
+uint8_t protocol_get_flags(struct __message_t* message) {
+    return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? REQUEST_RESPONSE_INVALID_TYPE : message->data[REQUEST_RESPONSE_FLAGS_OFFSET];
+}

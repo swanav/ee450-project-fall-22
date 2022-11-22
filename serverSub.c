@@ -17,7 +17,7 @@ typedef enum __department_server_response_type_t {
 static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_t* resp_dgram) {
     courses_lookup_params_t params = {0};
 
-    if (courses_lookup_info_decode(req_dgram, &params) != ERR_COURSES_OK) {
+    if (courses_lookup_info_request_decode(req_dgram, &params) != ERR_COURSES_OK) {
         ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_COURSES_INVALID_REQUEST);
     } else {
         char* category = courses_category_string_from_enum(params.category);
@@ -27,16 +27,13 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
         course_t* course = courses_lookup(db, params.course_code);
         if (!course) {
             LOGI(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, params.course_code);
-            ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_COURSES_NOT_FOUND);
+            courses_lookup_info_response_encode_error(resp_dgram, &params, ERR_COURSES_NOT_FOUND);
         } else if (params.category >= COURSES_LOOKUP_CATEGORY_INVALID) {
             LOGI("Invalid Category for lookup: %s", category);
-            ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_COURSES_INVALID_PARAMETERS);
+            courses_lookup_info_response_encode_error(resp_dgram, &params, ERR_COURSES_INVALID_PARAMETERS);
         } else if (courses_lookup_info(course, params.category, info, sizeof(info), &info_len) == ERR_COURSES_OK) {
             LOGI(SERVER_SUB_MESSAGE_ON_COURSE_FOUND, category, params.course_code, info);
-            resp_dgram->data_len = 2 + info_len;
-            resp_dgram->data[0] = RESPONSE_TYPE_COURSES_LOOKUP_INFO;
-            resp_dgram->data[1] = params.category;
-            memcpy(resp_dgram->data + 2, info, info_len);
+            courses_lookup_info_response_encode(resp_dgram, &params, info, info_len);
         }
     }
 }

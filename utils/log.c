@@ -5,9 +5,9 @@ void log_message(struct __message_t message) {
 }
 
 void log_buffer(uint8_t* buffer, uint8_t buffer_len) {
-    printf("B | log.c | ");
-    for (int i = 0; i < buffer_len; i++) {
-        printf("0x%02X ", buffer[i]);
-    }
-    printf("\r\n");
+    // printf("B | log.c | ");
+    // for (int i = 0; i < buffer_len; i++) {
+    //     printf("0x%02X ", buffer[i]);
+    // }
+    // printf("\r\n");
 }

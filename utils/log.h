@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include "../networking/networking.h"
 
-// #define SUBMIT_LOGS_FORMAT_ENABLED
-#define LOG_DEBUG
+#define SUBMIT_LOGS_FORMAT_ENABLED
+// #define LOG_DEBUG
 #ifndef LOG_DEBUG
 #define DLOG 0
 #else

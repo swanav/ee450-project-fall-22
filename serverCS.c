@@ -6,7 +6,7 @@
 
 int main() {
     const char* db_file = "cs.txt";
-    const char* subjectCode = "CS";
+    const char* subjectCode = DEPARTMENT_PREFIX_CS;
     const uint16_t port = SERVER_CS_UDP_PORT_NUMBER;
     return subjectServerMain(subjectCode, port, db_file);
 }

@@ -40,6 +40,7 @@ static void authenticate_user(credentials_t* user, tcp_endpoint_t* src) {
         protocol_encode(&dgram, REQUEST_TYPE_AUTH, 0, data_buffer_len, data_buffer);
 
         udp_send(udp, &serverC, &dgram);
+        LOGIM(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
     }
 }
 
@@ -57,20 +58,27 @@ static void on_auth_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp
 }
 
 static void on_auth_response_received(udp_dgram_t* req_dgram) {
-    LOGIM(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
     tcp_server_send(tcp, tcp->endpoints, req_dgram);
+    LOGIM(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
+}
+
+static void on_course_lookup_info_response_received(udp_dgram_t* req_dgram) {
+    tcp_server_send(tcp, tcp->endpoints, req_dgram);
+    LOGIM(SERVER_M_MESSAGE_ON_RESULT_FORWARDED);
 }
 
 static void request_course_lookup_info(courses_lookup_params_t* params) {
     if (udp) {
         udp_dgram_t dgram = {0};
-        courses_lookup_info_encode(params, &dgram);
-        if (strncasecmp(params->course_code, "EE", 2) == 0) {
+        courses_lookup_info_request_encode(params, &dgram);
+        if (strncasecmp(params->course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverEE, &dgram);
-        } else if (strncasecmp(params->course_code, "CS", 2) == 0) {
+            LOGI(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "EE");
+        } else if (strncasecmp(params->course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverCS, &dgram);
+            LOGI(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "CS");
         } else {
-            LOG_DEBUG("Invalid course code: %s", params->course_code);
+            LOGW("Invalid course code: %s", params->course_code);
         }
     }
 }
@@ -79,25 +87,27 @@ static void on_course_lookup_info_request_received(tcp_server_t* tcp, tcp_endpoi
     LOGI("Received course lookup info request from " IP_ADDR_FORMAT, IP_ADDR(src));
     log_message(*req_sgmnt);
     courses_lookup_params_t params = {0};
-    courses_lookup_info_decode(req_sgmnt, &params);
-    LOGI("Course lookup info request: %s %s", courses_category_string_from_enum(params.category), params.course_code);
+    courses_lookup_info_request_decode(req_sgmnt, &params);
+    LOGI(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "CS", params.course_code, courses_category_string_from_enum(params.category), ntohs(src->addr.sin_port));
+    // LOGI("Course lookup info request: %s %s", courses_category_string_from_enum(params.category), params.course_code);
     request_course_lookup_info(&params);
 }
 
 static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
-    LOGI(SERVER_M_MESSAGE_ON_AUTH_RESULT_RECEIVED, ntohs(source->addr.sin_port));
     uint8_t response_type = protocol_get_request_type(req_dgram);
     if (response_type == RESPONSE_TYPE_AUTH) {
+        LOGI(SERVER_M_MESSAGE_ON_AUTH_RESULT_RECEIVED, ntohs(source->addr.sin_port));
         on_auth_response_received(req_dgram);
     } else if (response_type == RESPONSE_TYPE_COURSES_LOOKUP_INFO) {
-        // on_course_lookup_info_response_received(req_dgram);
+        LOGIM("Received course lookup info response.");
+        on_course_lookup_info_response_received(req_dgram);
     } else {
         LOGIM("SERVER_M_MESSAGE_ON_UNKNOWN_REQUEST_TYPE");
     }
 }
 
 static void on_udp_server_tx(udp_ctx_t* udp, udp_endpoint_t* dest, udp_dgram_t* datagram) {
-    LOGIM(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
+    // LOGIM(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
 }
 
 static void on_tcp_server_rx(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* req_sgmnt) {

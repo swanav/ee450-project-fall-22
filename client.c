@@ -117,17 +117,16 @@ static void on_setup_complete(client_context_t* ctx) {
 }
 
 int collect_course_codes(char* course_code, uint8_t course_code_buffer_size) {
-    scanf("%49[^\n]", course_code);
+    fgets(course_code, course_code_buffer_size, stdin);
     return utils_get_word_count(string_trim(course_code));
 }
 
 static int new_request_prompt(char* course_code_buffer, uint8_t course_code_buffer_size, char* category_buffer, uint8_t category_buffer_size) {
-    LOGIM("\r\n\r\n------------Start a new request------------");
     printf("Please enter the course code to query: ");
     int courses_count = collect_course_codes(course_code_buffer, course_code_buffer_size);
     if (courses_count == 1) {
         printf("Please enter the category (Credit / Professor / Days / CourseName): ");
-        scanf("%s", category_buffer);
+        fgets(category_buffer, category_buffer_size, stdin);
     }
     return courses_count;
 }
@@ -140,11 +139,24 @@ static void send_request(client_context_t* ctx, int courses_count, char* course_
         memcpy(params.course_code, course_code_buffer, strlen(course_code_buffer));
         params.category = courses_lookup_category_from_string(string_trim(category_buffer));
         LOGI("Category: %d", params.category);
-        courses_lookup_info_encode(&params, &sgmnt);
+        courses_lookup_info_request_encode(&params, &sgmnt);
     } else if (courses_count > 1) {
         LOGI("Printing Course Details for requested course codes. (%s)", course_code_buffer);
     }
     tcp_client_send(ctx->client, &sgmnt);
+}
+
+static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
+    LOGIM("Received course lookup info.");
+    courses_lookup_params_t params = {0};
+    uint8_t info[64];
+    uint8_t info_len = 0;
+    uint8_t flags = protocol_get_flags(sgmnt);
+    if (COURSE_LOOKUP_MASK_INVALID(flags)) {
+        LOGEM("Invalid query.");
+    } else if (courses_lookup_info_response_decode(sgmnt, &params, info, sizeof(info), &info_len) == ERR_COURSES_OK) {
+        LOGI("The %s of %s is %.*s", courses_category_string_from_enum(params.category), params.course_code, info_len, info);   
+    }
 }
 
 static void* user_input_task(void* params) {
@@ -160,14 +172,16 @@ static void* user_input_task(void* params) {
     } while(ctx->auth_failure_count != 0);
 
     char course_code[50] = {0};
-    char category[10] = {0};
+    char category[20] = {0};
 
     while(1) {
         bzero(course_code, sizeof(course_code));
         bzero(category, sizeof(category));
+        LOGIM("\r\n\r\n------------Start a new request------------");
         int count = new_request_prompt(course_code, sizeof(course_code), category, sizeof(category));
         send_request(ctx, count, course_code, sizeof(course_code), category, sizeof(category));
         sem_wait(&ctx->semaphore);
+        LOGIM("\r\n------------End of Request------------\r\n");
     }
 
     return NULL;
@@ -189,8 +203,8 @@ static void on_receive(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
             on_auth_result(ctx, sgmnt);
             break;
         case RESPONSE_TYPE_COURSES_LOOKUP_INFO:
-            LOGIM("Received course lookup info.");
-            // on_course_lookup_info(ctx, sgmnt);
+            on_course_lookup_info(ctx, sgmnt);
+            sem_post(&ctx->semaphore);
             break;
         case RESPONSE_TYPE_COURSES_LOOKUP:
             LOGIM("Received course lookup.");

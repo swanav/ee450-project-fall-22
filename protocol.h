@@ -6,6 +6,7 @@
 
 #define DEPARTMENT_PREFIX_EE "EE"
 #define DEPARTMENT_PREFIX_CS "CS"
+#define DEPARTMENT_PREFIX_LEN 2
 
 #define REQUEST_RESPONSE_TYPE_OFFSET        0
 #define REQUEST_RESPONSE_FLAGS_OFFSET       1
@@ -51,12 +52,14 @@ typedef uint8_t courses_lookup_category_t;
 #define COURSE_LOOKUP_FLAGS_PROFESSOR           (1 << 2)
 #define COURSE_LOOKUP_FLAGS_DAYS                (1 << 3)
 #define COURSE_LOOKUP_FLAGS_COURSE_NAME         (1 << 4)
+#define COURSE_LOOKUP_FLAGS_INVALID             (1 << 7)
 
 #define COURSE_LOOKUP_MASK_COURSE_CODE(flags)   ((flags) & COURSE_LOOKUP_FLAGS_COURSE_CODE)
 #define COURSE_LOOKUP_MASK_CREDITS(flags)       ((flags) & COURSE_LOOKUP_FLAGS_CREDITS)
 #define COURSE_LOOKUP_MASK_PROFESSOR(flags)     ((flags) & COURSE_LOOKUP_FLAGS_PROFESSOR)
 #define COURSE_LOOKUP_MASK_DAYS(flags)          ((flags) & COURSE_LOOKUP_FLAGS_DAYS)
 #define COURSE_LOOKUP_MASK_COURSE_NAME(flags)   ((flags) & COURSE_LOOKUP_FLAGS_COURSE_NAME)
+#define COURSE_LOOKUP_MASK_INVALID(flags)       ((flags) & COURSE_LOOKUP_FLAGS_INVALID)
 
 
 
@@ -70,5 +73,6 @@ request_type_t protocol_get_request_type(struct __message_t* message);
 
 uint8_t protocol_get_payload_len(struct __message_t* message);
 
+uint8_t protocol_get_flags(struct __message_t* message);
 
 #endif // PROTOCOL_H

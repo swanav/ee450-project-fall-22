@@ -488,7 +488,7 @@ err_t courses_lookup_info_response_encode(struct __message_t* out_msg, courses_l
         buffer_offset += buffer[1];
         buffer_len = buffer_offset;
         protocol_encode(out_msg, RESPONSE_TYPE_COURSES_LOOKUP_INFO, flags, buffer_len, buffer);
-        LOG_BUFFER(buffer, buffer_len);
+        // LOG_BUFFER(buffer, buffer_len);
     }
 
     return ERR_COURSES_OK;
@@ -509,7 +509,7 @@ err_t courses_lookup_info_response_decode(struct __message_t* msg, courses_looku
     uint16_t output_data_buffer_len = 0;
     
     protocol_decode(msg, NULL, &flags, &output_data_buffer_len, sizeof(output_data_buffer), output_data_buffer);    
-    LOG_BUFFER(output_data_buffer, output_data_buffer_len);
+    // LOG_BUFFER(output_data_buffer, output_data_buffer_len);
 
     params->category = courses_category_from_flags(flags);
     memcpy(params->course_code, output_data_buffer + 2, output_data_buffer[0]);

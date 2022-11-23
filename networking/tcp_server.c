@@ -132,7 +132,7 @@ void tcp_server_receive(tcp_server_t* server, int child_sd) {
     } else {
         tcp_endpoint_t* endpoint = get_endpoint(server, child_sd);
         LOG_INFO("Received %d bytes from "IP_ADDR_FORMAT" : %s", bytes_read, IP_ADDR(endpoint), buffer);
-        LOG_BUFFER(buffer, bytes_read);
+        // LOG_BUFFER(buffer, bytes_read);
         tcp_sgmnt_t sgmnt = {0};
         memcpy(sgmnt.data, buffer, bytes_read);
         sgmnt.data_len = bytes_read;

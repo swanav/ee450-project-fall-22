@@ -43,6 +43,7 @@ int collect_credentials(credentials_t* user) {
     LOG_WARN("james\r\n");
 #else
     if (scanf("%s", user->username)) {
+        getc(stdin);
         user->username_len = (uint8_t) strlen((char*) user->username);
     }
 #endif 
@@ -54,6 +55,7 @@ int collect_credentials(credentials_t* user) {
     LOG_WARN("2kAnsa7s)\r\n");
 #else
     if (scanf("%s", user->password)) {
+        getc(stdin);
         user->password_len = (uint8_t) strlen((char*) user->password);
     }
 #endif 
@@ -84,7 +86,7 @@ static void on_authentication_failure(client_context_t* ctx, uint8_t* username, 
 }
 
 static void on_auth_result(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
-    LOG_ERR(CLIENT_MESSAGE_ON_AUTH_RESULT, ctx->creds.username_len, ctx->creds.username, ntohs(ctx->client->server->addr.sin_port));
+    LOG_INFO(CLIENT_MESSAGE_ON_AUTH_RESULT, ctx->creds.username_len, ctx->creds.username, ntohs(ctx->client->server->addr.sin_port));
     uint8_t flags = 0;
     uint16_t payload_len = 0;
     protocol_decode(sgmnt, NULL, &flags, &payload_len, 0, NULL);
@@ -144,6 +146,7 @@ static void send_request(client_context_t* ctx, int courses_count, uint8_t* cour
         params.category = courses_lookup_category_from_string(string_trim((char*) category_buffer));
         if (params.category == COURSES_LOOKUP_CATEGORY_INVALID) {
             LOG_ERR("Invalid category.");
+            sem_post(&ctx->semaphore);
             return;
         }
         courses_lookup_info_request_encode(&params, &sgmnt);
@@ -196,11 +199,11 @@ static void* user_input_task(void* params) {
     while(1) {
         bzero(course_code, sizeof(course_code));
         bzero(category, sizeof(category));
-        LOG_INFO("\r\n\r\n------------Start a new request------------");
+        LOG_INFO("------------Start a new request------------");
         int count = new_request_prompt(course_code, sizeof(course_code), category, sizeof(category));
         send_request(ctx, count, course_code, sizeof(course_code), category, sizeof(category));
         sem_wait(&ctx->semaphore);
-        LOG_INFO("\r\n------------End of Request------------\r\n");
+        LOG_INFO("------------End of Request------------\r\n");
     }
 
     return NULL;

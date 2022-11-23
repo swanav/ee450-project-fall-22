@@ -195,11 +195,11 @@ courses_lookup_category_t courses_category_from_flags(uint8_t category) {
 }
 
 
-err_t courses_details_request_encode(char* course_code, struct __message_t* out_msg) {
+err_t courses_details_request_encode(uint8_t * course_code, uint8_t course_code_len, struct __message_t* out_msg) {
     if (course_code == NULL || out_msg == NULL) {
         return ERR_COURSES_INVALID_PARAMETERS;
     }
-    protocol_encode(out_msg, REQUEST_TYPE_COURSES_DETAIL_LOOKUP, 0, strlen(course_code), (uint8_t*) course_code);
+    protocol_encode(out_msg, REQUEST_TYPE_COURSES_DETAIL_LOOKUP, 0, course_code_len, course_code);
     return ERR_COURSES_OK;
 }
 

@@ -51,7 +51,7 @@ course_t* courses_lookup_multiple_response_decode(struct __message_t* in_msg);
 err_t courses_details_response_encode(const course_t* course, struct __message_t* out_msg);
 err_t courses_details_response_decode(udp_dgram_t* req_dgram, course_t* course);
 
-err_t courses_details_request_encode(char* course_code, struct __message_t* out_msg);
+err_t courses_details_request_encode(uint8_t * course_code, uint8_t course_code_len, struct __message_t* out_msg);
 err_t courses_details_request_decode(struct __message_t* in_msg, uint8_t* course_code, uint8_t course_code_size);
 
 

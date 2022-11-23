@@ -118,31 +118,31 @@ static void on_setup_complete(client_context_t* ctx) {
     sem_post(&ctx->semaphore);
 }
 
-static int collect_course_codes(char* course_code, uint8_t course_code_buffer_size) {
+static int collect_course_codes(uint8_t* course_code, uint8_t course_code_buffer_size) {
 #ifdef CLIENT_TEST
-    strncpy(course_code, "CS100 EE450 EE608 CS435 EE520", course_code_buffer_size);
+    strncpy((char*) course_code, "CS100 EE450 EE608 CS435 EE520", course_code_buffer_size);
 #else
-    fgets(course_code, course_code_buffer_size, stdin);
+    fgets((char*) course_code, course_code_buffer_size, stdin);
 #endif // CLIENT_TEST
-    return utils_get_word_count(string_trim(course_code));
+    return utils_get_word_count(string_trim((char*) course_code));
 }
 
-static int new_request_prompt(char* course_code_buffer, uint8_t course_code_buffer_size, char* category_buffer, uint8_t category_buffer_size) {
+static int new_request_prompt(uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {
     LOG_WARN("Please enter the course code to query: ");
     int courses_count = collect_course_codes(course_code_buffer, course_code_buffer_size);
     if (courses_count == 1) {
         LOG_WARN("Please enter the category (Credit / Professor / Days / CourseName): ");
-        fgets(category_buffer, category_buffer_size, stdin);
+        fgets((char*) category_buffer, category_buffer_size, stdin);
     }
     return courses_count;
 }
 
-static void send_request(client_context_t* ctx, int courses_count, char* course_code_buffer, uint8_t course_code_buffer_size, char* category_buffer, uint8_t category_buffer_size) {
+static void send_request(client_context_t* ctx, int courses_count, uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {
     tcp_sgmnt_t sgmnt = {0};
     if (courses_count == 1) {
         courses_lookup_params_t params = {0};
-        memcpy(params.course_code, course_code_buffer, strlen(course_code_buffer));
-        params.category = courses_lookup_category_from_string(string_trim(category_buffer));
+        memcpy(params.course_code, course_code_buffer, strlen((const char*) course_code_buffer));
+        params.category = courses_lookup_category_from_string(string_trim((char*) category_buffer));
         if (params.category == COURSES_LOOKUP_CATEGORY_INVALID) {
             LOG_ERR("Invalid category.");
             return;
@@ -170,10 +170,10 @@ static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
 
 static void on_course_multi_lookup(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_INFO("Received course multi lookup info.");
-    courses_lookup_params_t params = {0};
-    uint8_t info[64];
-    uint8_t info_len = 0;
-    uint8_t flags = protocol_get_flags(sgmnt);
+    // courses_lookup_params_t params = {0};
+    // uint8_t info[64] = {0};
+    // uint8_t info_len = 0;
+    // uint8_t flags = protocol_get_flags(sgmnt);
 
     course_t* courses = courses_lookup_multiple_response_decode(sgmnt);
     LOG_WARN("Course Code: Credits, Professor, Days, Course Name");
@@ -196,8 +196,8 @@ static void* user_input_task(void* params) {
         sem_wait(&ctx->semaphore);
     } while(ctx->auth_failure_count != 0);
 
-    char course_code[100] = {0};
-    char category[20] = {0};
+    uint8_t course_code[100] = {0};
+    uint8_t category[20] = {0};
 
     while(1) {
         bzero(course_code, sizeof(course_code));

@@ -94,15 +94,15 @@ static void request_course_lookup_info(courses_lookup_params_t* params) {
 static void request_course_details(uint8_t* course_code, uint8_t course_code_len) {
     if (udp) {
         udp_dgram_t dgram = {0};
-        courses_details_request_encode(course_code, &dgram);
-        if (strncasecmp(course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
+        courses_details_request_encode(course_code, course_code_len, &dgram);
+        if (strncasecmp((char*) course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverEE, &dgram);
-            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "EE");
-        } else if (strncasecmp(course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_EE);
+        } else if (strncasecmp((char*) course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverCS, &dgram);
-            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "CS");
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_CS);
         } else {
-            LOG_WARN("Invalid course code: %s", course_code);
+            LOG_WARN("Invalid course code: %.*s", course_code_len, course_code);
         }
     }
 }
@@ -136,7 +136,7 @@ void* multi_request_thread(void* params) {
 
     uint8_t offset = 0;
 
-    char course_code[10] = {0};
+    uint8_t course_code[10] = {0};
     uint8_t course_code_len = 0;
 
     multi_course_response = NULL;

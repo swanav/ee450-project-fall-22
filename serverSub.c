@@ -41,15 +41,15 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
 }
 
 static void handle_course_detail_lookup_request(udp_dgram_t* req_dgram, udp_dgram_t* resp_dgram) {
-    courses_lookup_params_t params = {0};
+    // courses_lookup_params_t params = {0};
 
     uint8_t course_code[10] = {0};
 
-    if (courses_details_request_decode(req_dgram, &course_code, sizeof(course_code)) != ERR_COURSES_OK) {
+    if (courses_details_request_decode(req_dgram, course_code, sizeof(course_code)) != ERR_COURSES_OK) {
         ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_COURSES_INVALID_REQUEST);
     } else {
         LOG_INFO(SERVER_SUB_MESSAGE_ON_SUMMARY_REQUEST_RECEIVED, subject_code, course_code);
-        course_t* course = courses_lookup(db, course_code);
+        course_t* course = courses_lookup(db, (const char*) course_code);
         if (!course) {
             LOG_INFO(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, course_code);
             ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_COURSES_NOT_FOUND);

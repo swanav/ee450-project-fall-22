@@ -8,10 +8,11 @@
 #define DEPARTMENT_PREFIX_CS "CS"
 #define DEPARTMENT_PREFIX_LEN 2
 
-#define REQUEST_RESPONSE_TYPE_OFFSET        0
-#define REQUEST_RESPONSE_FLAGS_OFFSET       1
-#define REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET 2
-#define REQUEST_RESPONSE_HEADER_LEN         3
+#define REQUEST_RESPONSE_TYPE_OFFSET          0
+#define REQUEST_RESPONSE_FLAGS_OFFSET         1
+#define REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET_1 2
+#define REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET_2 3
+#define REQUEST_RESPONSE_HEADER_LEN           4
 
 typedef uint8_t request_type_t;
 #define REQUEST_TYPE_AUTH                       0x61
@@ -66,14 +67,14 @@ typedef uint8_t courses_lookup_category_t;
 
 
 // Create UDP or TCP packet based on given buffer
-void protocol_encode(struct __message_t* message, uint8_t type, uint8_t flags, uint8_t payload_len, uint8_t* payload);
+void protocol_encode(struct __message_t* message, uint8_t type, uint8_t flags, uint16_t payload_len, uint8_t* payload);
 
 // Recreate buffer from given UDP or TCP packet
-void protocol_decode(struct __message_t* message, request_type_t* request_type, uint8_t* flags, uint8_t *out_data_len, const uint8_t out_data_size, uint8_t* out_data);
+void protocol_decode(struct __message_t* message, request_type_t* request_type, uint8_t* flags, uint16_t *out_data_len, const uint16_t out_data_size, uint8_t* out_data);
 
 request_type_t protocol_get_request_type(struct __message_t* message);
 
-uint8_t protocol_get_payload_len(struct __message_t* message);
+uint16_t protocol_get_payload_len(struct __message_t* message);
 
 uint8_t protocol_get_flags(struct __message_t* message);
 

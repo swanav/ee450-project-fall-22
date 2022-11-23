@@ -54,7 +54,7 @@ static void authenticate_user(credentials_t* user, tcp_endpoint_t* src) {
 
 static void on_auth_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* sgmnt) {
     uint8_t buffer[128];
-    uint8_t buffer_size = 0;
+    uint16_t buffer_size = 0;
     credentials_t credentials = {0};
 
     protocol_decode(sgmnt, NULL, NULL, &buffer_size, sizeof(buffer), buffer);
@@ -200,12 +200,12 @@ static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t
         LOG_INFO("Received course detail response.");
         course_t* course = calloc(1, sizeof(course_t));
         if (courses_details_response_decode(req_dgram, course) == ERR_COURSES_OK) {
-            courses_print(course);
+            // courses_print(course);
             multi_course_response = insert_to_end_of_linked_list(multi_course_response, course);
         }
         sem_post(&semaphore);
     } else {
-        LOG_ERR("SERVER_M_MESSAGE_ON_UNKNOWN_REQUEST_TYPE");
+        LOG_ERR("SERVER_M_MESSAGE_ON_UNKNOWN_REQUEST_TYPE: %d", response_type);
         sem_post(&semaphore);
     }
 }

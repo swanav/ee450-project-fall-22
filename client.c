@@ -23,7 +23,7 @@
 
 LOG_TAG(client);
 
-#define CLIENT_TEST
+// #define CLIENT_TEST
 
 typedef struct __client_context_t {
     int auth_failure_count;
@@ -86,7 +86,7 @@ static void on_authentication_failure(client_context_t* ctx, uint8_t* username, 
 static void on_auth_result(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_ERR(CLIENT_MESSAGE_ON_AUTH_RESULT, ctx->creds.username_len, ctx->creds.username, ntohs(ctx->client->server->addr.sin_port));
     uint8_t flags = 0;
-    uint8_t payload_len = 0;
+    uint16_t payload_len = 0;
     protocol_decode(sgmnt, NULL, &flags, &payload_len, 0, NULL);
     if (payload_len == 0) {
         if (AUTH_MASK_SUCCESS(flags)) {
@@ -95,7 +95,6 @@ static void on_auth_result(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
             on_authentication_failure(ctx, ctx->creds.username, ctx->creds.username_len, flags);
         }
     }
-    sem_post(&ctx->semaphore);
 }
 
 static void authenticate_user(client_context_t* ctx) {
@@ -149,7 +148,7 @@ static void send_request(client_context_t* ctx, int courses_count, uint8_t* cour
         }
         courses_lookup_info_request_encode(&params, &sgmnt);
     } else if (courses_count > 1) {
-        LOG_INFO("Printing Course Details for requested course codes. (%s)", course_code_buffer);
+        LOG_INFO("Requesting course details for requested course codes. (%s)", course_code_buffer);
         courses_lookup_multiple_request_encode(&sgmnt, courses_count, course_code_buffer, course_code_buffer_size);
     }
     tcp_client_send(ctx->client, &sgmnt);
@@ -170,11 +169,6 @@ static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
 
 static void on_course_multi_lookup(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_INFO("Received course multi lookup info.");
-    // courses_lookup_params_t params = {0};
-    // uint8_t info[64] = {0};
-    // uint8_t info_len = 0;
-    // uint8_t flags = protocol_get_flags(sgmnt);
-
     course_t* courses = courses_lookup_multiple_response_decode(sgmnt);
     LOG_WARN("Course Code: Credits, Professor, Days, Course Name");
     while(courses != NULL) {
@@ -229,16 +223,15 @@ static void on_receive(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
             break;
         case RESPONSE_TYPE_COURSES_LOOKUP_INFO:
             on_course_lookup_info(ctx, sgmnt);
-            sem_post(&ctx->semaphore);
             break;
         case RESPONSE_TYPE_COURSES_MULTI_LOOKUP:
-            LOG_INFO("Received course lookup.");
             on_course_multi_lookup(ctx, sgmnt);
             break;
         default:
             LOG_ERR("Unknown segment type. %d", response_type);
             break;
     }
+    sem_post(&ctx->semaphore);
 }
 
 static void* network_thread_task(void* params) {

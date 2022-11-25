@@ -28,10 +28,10 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
         size_t info_len = 0;
         course_t* course = courses_lookup(db, params.course_code);
         if (!course) {
-            LOG_INFO(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, params.course_code);
+            LOG_WARN(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, params.course_code);
             courses_lookup_info_response_encode_error(resp_dgram, &params, ERR_COURSES_NOT_FOUND);
         } else if (params.category >= COURSES_LOOKUP_CATEGORY_INVALID) {
-            LOG_INFO("Invalid Category for lookup: %s", category);
+            LOG_WARN("Invalid Category for lookup: %s", category);
             courses_lookup_info_response_encode_error(resp_dgram, &params, ERR_COURSES_INVALID_PARAMETERS);
         } else if (courses_lookup_info(course, params.category, info, sizeof(info), &info_len) == ERR_COURSES_OK) {
             LOG_INFO(SERVER_SUB_MESSAGE_ON_COURSE_FOUND, category, params.course_code, info);
@@ -51,7 +51,7 @@ static void handle_course_detail_lookup_request(udp_dgram_t* req_dgram, udp_dgra
         LOG_INFO(SERVER_SUB_MESSAGE_ON_SUMMARY_REQUEST_RECEIVED, subject_code, course_code);
         course_t* course = courses_lookup(db, (const char*) course_code);
         if (!course) {
-            LOG_INFO(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, course_code);
+            LOG_WARN(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, course_code);
             ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_COURSES_NOT_FOUND);
         } else {
             courses_details_response_encode(course, resp_dgram);
@@ -67,7 +67,7 @@ static void udp_message_rx_handler(udp_ctx_t* udp, udp_endpoint_t* source, udp_d
     } else if (req_type == REQUEST_TYPE_COURSES_DETAIL_LOOKUP) {
         handle_course_detail_lookup_request(req_dgram, &resp_dgram);
     } else {
-        LOG_INFO(SERVER_SUB_MESSAGE_ON_REQUEST_INVALID, subject_code);
+        LOG_WARN(SERVER_SUB_MESSAGE_ON_REQUEST_INVALID, subject_code);
         ENCODE_SIMPLE_ERROR_MESSAGE(&resp_dgram, DEPARTMENT_SERVER_RESPONSE_INVALID);
     }
 

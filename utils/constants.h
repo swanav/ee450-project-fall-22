@@ -11,6 +11,8 @@
 #define SERVER_M_TCP_PORT_NUMBER  25000 + USC_ID_LAST_3
 #define CLIENT_PORT_NUMBER    // DYNAMICALLY ASSIGNED PORT NUMBER
 
+#define CREDENTIALS_FILE "cred.txt"
+
 #define AUTH_SUCCESS                    -1
 
 #define TCP_QUERY_TIMEOUT_DELAY_S       2

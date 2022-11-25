@@ -5,7 +5,6 @@
 
 #include "log.h"
 
-#if ENABLE_DEBUG_LOGS
 
 #define LOG_CYAN_STR        "\033[0;36m"
 #define LOG_CYAN_BOLD_STR   "\033[1;36m"
@@ -95,4 +94,3 @@ void log_dbg_buffer(const char* tag, const char* buffer_name, const uint8_t* buf
 	}
 }
 
-#endif // ENABLE_DEBUG_LOGS

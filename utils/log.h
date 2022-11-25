@@ -2,14 +2,13 @@
 #define _LOG_H_
 
 #ifndef ENABLE_DEBUG_LOGS
-#define ENABLE_DEBUG_LOGS 1
+#define ENABLE_DEBUG_LOGS 0
 #endif // ENABLE_DEBUG_LOGS
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#if ENABLE_DEBUG_LOGS
 #define LOG_TAG(x) __attribute__((unused)) static const char* TAG = #x
 
 typedef enum {
@@ -24,6 +23,8 @@ typedef enum {
 #define LOG_INFO(...)           log_text(LOG_LVL_INFO, TAG, __VA_ARGS__)
 #define LOG_WARN(...)           log_text(LOG_LVL_WARNING, TAG, __VA_ARGS__)
 #define LOG_ERR(...)            log_text(LOG_LVL_ERROR, TAG, __VA_ARGS__)
+
+#if ENABLE_DEBUG_LOGS
 #define LOG_DBG(...)            log_text(LOG_LVL_DEBUG, TAG, __VA_ARGS__)
 #define LOG_VERBOSE(...)        log_text(LOG_LVL_VERBOSE, TAG, __VA_ARGS__)
 #define LOG_BUFFER(buffer, len) log_dbg_buffer(TAG, #buffer, buffer, len)
@@ -39,15 +40,7 @@ typedef enum {
 #define LOG_VAR_LONG(var)  LOG_DBG("%s: %s -> %ld", __func__, #var, var)
 #define LOG_VAR_FLOAT(var) LOG_DBG("%s: %s -> %f", __func__, #var, var)
 
-void log_text(const LogLevel_t logLevel, const char* tag, const char* format, ...);
-void log_dbg_buffer(const char* tag, const char* buffer_name, const uint8_t* buffer, size_t len);
 #else
-#define LOG_TAG(x)
-
-#define LOG_INIT()
-#define LOG_INFO(...)
-#define LOG_WARN(...)
-#define LOG_ERR(...)
 #define LOG_DBG(...)
 #define LOG_VERBOSE(...)
 #define LOG_BUFFER(...)
@@ -64,5 +57,8 @@ void log_dbg_buffer(const char* tag, const char* buffer_name, const uint8_t* buf
 #define LOG_VAR_FLOAT(var)
 
 #endif
+
+void log_text(const LogLevel_t logLevel, const char* tag, const char* format, ...);
+void log_dbg_buffer(const char* tag, const char* buffer_name, const uint8_t* buffer, size_t len);
 
 #endif // _LOG_H_

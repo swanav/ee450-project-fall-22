@@ -86,10 +86,10 @@ static void on_authentication_failure(client_context_t* ctx, uint8_t* username, 
     }
 
     if (++ctx->auth_failure_count == 3) {
-        LOG_INFO("Maximum attempts reached. Closing client.");
+        LOG_ERR("Maximum attempts reached. Closing client.");
         exit(1);
     } else {
-        LOG_INFO("Please try again... %d attempts remaining", 3 - ctx->auth_failure_count);
+        LOG_WARN("Please try again... %d attempts remaining", 3 - ctx->auth_failure_count);
     }
 }
 
@@ -159,14 +159,14 @@ static void send_request(client_context_t* ctx, int courses_count, uint8_t* cour
         }
         courses_lookup_info_request_encode(&params, &sgmnt);
     } else if (courses_count > 1) {
-        LOG_INFO("Requesting course details for requested course codes. (%s)", course_code_buffer);
+        LOG_DBG("Requesting course details for requested course codes. (%s)", course_code_buffer);
         courses_lookup_multiple_request_encode(&sgmnt, courses_count, course_code_buffer, course_code_buffer_size);
     }
     tcp_client_send(ctx->client, &sgmnt);
 }
 
 static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
-    LOG_INFO("Received course lookup info.");
+    LOG_DBG("Received course lookup info.");
     courses_lookup_params_t params = {0};
     uint8_t info[64];
     uint8_t info_len = 0;
@@ -216,7 +216,7 @@ static void print_course_multi_lookup_result(course_t* courses) {
 }
 
 static void on_course_multi_lookup(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
-    LOG_INFO("Received course multi lookup info.");
+    LOG_DBG("Received course multi lookup info.");
     course_t* courses = courses_lookup_multiple_response_decode(sgmnt);
     print_course_multi_lookup_result(courses);
     courses_free(courses);

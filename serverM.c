@@ -131,13 +131,13 @@ static void drop_linked_list(course_t* ptr) {
 }
 
 void* multi_request_thread(void* params) {
-    LOG_INFO("Starting multi request thread");
+    LOG_DBG("Starting multi request thread");
     tcp_sgmnt_t* req_sgmnt = (tcp_sgmnt_t*) params;
 
     uint8_t courses_length = 0;
     uint8_t buffer[128] = {0};
     courses_lookup_multiple_request_decode(req_sgmnt, &courses_length, buffer, sizeof(buffer));
-    LOG_INFO("Received multi request for %d courses", courses_length);
+    LOG_DBG("Received multi request for %d courses", courses_length);
 
     uint8_t offset = 0;
 
@@ -155,11 +155,11 @@ void* multi_request_thread(void* params) {
         sem_wait(&semaphore);
     }
 
-    LOG_INFO("Multi request thread finished");
+    LOG_DBG("Multi request thread finished");
 
     courses_printall(multi_course_response);
 
-    LOG_INFO("Printed all courses");
+    LOG_DBG("Printed all courses");
 
     tcp_sgmnt_t sgmnt = {0};
 
@@ -175,7 +175,7 @@ void* multi_request_thread(void* params) {
 }
 
 static void on_course_lookup_multi_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* req_sgmnt) {
-    LOG_INFO("Received course lookup multiple request from " IP_ADDR_FORMAT, IP_ADDR(src));
+    LOG_DBG("Received course lookup multiple request from " IP_ADDR_FORMAT, IP_ADDR(src));
     pthread_create(&thread, NULL, multi_request_thread, (void*) req_sgmnt);
 }
 
@@ -205,7 +205,6 @@ static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t
         LOG_INFO("Received course detail response.");
         course_t* course = calloc(1, sizeof(course_t));
         if (courses_details_response_decode(req_dgram, course) == ERR_COURSES_OK) {
-            // courses_print(course);
             multi_course_response = insert_to_end_of_linked_list(multi_course_response, course);
         }
         sem_post(&semaphore);

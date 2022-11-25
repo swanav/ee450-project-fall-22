@@ -30,9 +30,6 @@ authentication status.
 
 LOG_TAG(serverC);
 
-#define CREDENTIALS_FILE "cred.txt"
-
-// static udp_ctx_t* udp;
 static credentials_t* credentials_db = NULL;
 
 static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram_t* res_dgram) {
@@ -83,17 +80,17 @@ static void udp_message_tx_handler(udp_ctx_t* server, udp_endpoint_t* dest, udp_
 
 int main(int argc, char* argv[]) {
     credentials_db = credentials_init(CREDENTIALS_FILE);
-    // credentials_print(credentials_db);
-    udp_ctx_t* udp = udp_start(SERVER_C_UDP_PORT_NUMBER);
+    credentials_print(credentials_db);
 
+    udp_ctx_t* udp = udp_start(SERVER_C_UDP_PORT_NUMBER);
     LOG_INFO(SERVER_C_MESSAGE_ON_BOOTUP, udp->port);
     udp->on_rx = udp_message_rx_handler;
     udp->on_tx = udp_message_tx_handler;
-
 
     while(1) {
         udp_receive(udp);
     }
     udp_stop(udp);
+
     return 0;
 }

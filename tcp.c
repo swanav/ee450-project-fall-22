@@ -38,7 +38,7 @@ tcp_server_t* tcp_server_start(uint16_t port) {
                 } else {
                     server->max_sd = server->sd;
                     FD_SET(server->sd, &server->server_fd_set);
-                    LOG_INFO("TCP Server started on port %d", port);
+                    LOG_DBG("TCP Server started on port %d", port);
                 }
             }
         }
@@ -80,7 +80,7 @@ static void create_child_socket(tcp_server_t* server, int child_sd) {
         if (getpeername(child_sd, (struct sockaddr*) &endpoint->addr, &addr_len) < 0) {
             LOG_ERR("Failed to get peer name. Error: %s.", strerror(errno));
         } else {
-            LOG_INFO("Peer name: " IP_ADDR_FORMAT, IP_ADDR(endpoint));
+            LOG_DBG("Peer name: " IP_ADDR_FORMAT, IP_ADDR(endpoint));
         }
 
         FD_SET(child_sd, &server->server_fd_set);
@@ -97,7 +97,7 @@ void tcp_server_accept(tcp_server_t* server) {
         if ((new_sd = accept(server->sd, NULL, NULL)) < 0) {
             LOG_ERR("Failed to accept connection. Error: %s.", strerror(errno));
         } else {
-            LOG_INFO("Accepted connection on socket %d", new_sd);
+            LOG_DBG("Accepted connection on socket %d", new_sd);
             create_child_socket(server, new_sd);
         }
     }
@@ -125,11 +125,11 @@ void tcp_server_receive(tcp_server_t* server, int child_sd) {
     if (bytes_read < 0) {
         LOG_ERR("Failed to read from socket. Error: %s.", strerror(errno));
     } else if (bytes_read == 0) {
-        LOG_INFO("Client disconnected.");
+        LOG_WARN("Client disconnected.");
         close_child_socket(server, child_sd);
     } else {
         tcp_endpoint_t* endpoint = get_endpoint(server, child_sd);
-        LOG_INFO("Received %d bytes from "IP_ADDR_FORMAT" : %s", bytes_read, IP_ADDR(endpoint), buffer);
+        LOG_DBG("Received %d bytes from "IP_ADDR_FORMAT" : %s", bytes_read, IP_ADDR(endpoint), buffer);
         // LOG_BUFFER(buffer, bytes_read);
         tcp_sgmnt_t sgmnt = {0};
         memcpy(sgmnt.data, buffer, bytes_read);
@@ -165,12 +165,12 @@ void tcp_server_tick(tcp_server_t* server) {
 // Send data to a Child Socket
 void tcp_server_send(tcp_server_t* server, tcp_endpoint_t* dst, tcp_sgmnt_t* segment) {
     if (server != NULL && dst != NULL && segment != NULL) {
-        LOG_INFO("Sending TCP Segment to "IP_ADDR_FORMAT" %.*s", IP_ADDR(dst), (int) segment->data_len, segment->data);
-        int bytes_sent = sendto(dst->sd, segment->data, segment->data_len, 0, (struct sockaddr*) &dst->addr, sizeof(socklen_t));
+        LOG_DBG("Sending TCP Segment to "IP_ADDR_FORMAT" %.*s", IP_ADDR(dst), (int) segment->data_len, segment->data);
+        int bytes_sent = sendto(dst->sd, segment->data, segment->data_len, 0, (struct sockaddr*) &dst->addr, sizeof(struct sockaddr));
         if (bytes_sent < 0) {
             LOG_ERR("Failed to send TCP Segment. Error: %s.", strerror(errno));
         } else {
-            LOG_INFO("Sent %d bytes", bytes_sent);
+            LOG_DBG("Sent %d bytes", bytes_sent);
         }
     }
 }
@@ -191,7 +191,7 @@ tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_
         return NULL;
     }
 
-    if (connect(client->sd, (struct sockaddr*)&dest->addr, sizeof(socklen_t)) < 0) {
+    if (connect(client->sd, (struct sockaddr*)&dest->addr, sizeof(struct sockaddr)) < 0) {
         LOG_ERR("tcp_client_connect: Error connecting to server");
         free(client);
         return NULL;
@@ -226,7 +226,7 @@ void tcp_client_receive(tcp_client_t* client) {
         int bytes_read = recv(client->sd, sgmnt.data, sizeof(sgmnt.data), 0);
         if (bytes_read > 0) {
             sgmnt.data_len = bytes_read;
-            LOG_INFO("Received %d bytes from server", bytes_read);
+            LOG_DBG("Received %d bytes from server", bytes_read);
             if (client->on_receive) {
                 client->on_receive(client, &sgmnt);
             }

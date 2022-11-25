@@ -50,7 +50,7 @@ void udp_receive(udp_ctx_t* udp) {
         // LOG_DBG("Waiting for a UDP Datagram");
         udp_endpoint_t src = {0};
         udp_dgram_t dgram = {0};
-        socklen_t addr_len = sizeof(socklen_t);
+        socklen_t addr_len = sizeof(struct sockaddr);
 
         dgram.data_len = recvfrom(udp->sd, dgram.data, sizeof(dgram.data), 0, (struct sockaddr*) &src.addr, &addr_len);
         if (dgram.data_len < 0) {
@@ -67,7 +67,7 @@ void udp_receive(udp_ctx_t* udp) {
 void udp_send(udp_ctx_t* udp, udp_endpoint_t* dst, udp_dgram_t* dgram) {
     if (udp != NULL && dst != NULL && dgram != NULL) {
         // LOG_DBG("Sending UDP Datagram (%ld bytes) to "IP_ADDR_FORMAT, dgram->data_len, IP_ADDR(dst));
-        if (sendto(udp->sd, dgram->data, dgram->data_len, 0, (struct sockaddr*)&dst->addr, sizeof(socklen_t)) < 0) {
+        if (sendto(udp->sd, dgram->data, dgram->data_len, 0, (struct sockaddr*)&dst->addr, sizeof(struct sockaddr)) < 0) {
             LOG_ERR("Failed to send UDP Datagram. Error: %s.", strerror(errno));
         } else {
             if (udp->on_tx) {

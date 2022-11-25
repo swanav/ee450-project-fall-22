@@ -23,7 +23,6 @@ authentication status.
 #include "log.h"
 #include "messages.h"
 #include "networking.h"
-#include "udp_server.h"
 #include "utils.h"
 #include "data/credentials.h"
 
@@ -33,7 +32,7 @@ LOG_TAG(serverC);
 
 #define CREDENTIALS_FILE "cred.txt"
 
-static udp_ctx_t* udp_peer_ctx;
+// static udp_ctx_t* udp;
 static credentials_t* credentials_db = NULL;
 
 static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram_t* res_dgram) {
@@ -41,14 +40,16 @@ static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram
     uint8_t flags = AUTH_FLAGS_FAILURE;
 
     credentials_t credentials = {0};
+
     err_t result = credentials_decode(&credentials, (const uint8_t*) req_dgram->data + REQUEST_RESPONSE_HEADER_LEN, req_dgram->data_len - REQUEST_RESPONSE_HEADER_LEN);
+
     if (result == ERR_INVALID_PARAMETERS) {
         LOG_ERR("Failed to parse authentication request");
     } else {
-        LOG_INFO("Received authentication request for user %s", credentials.username);
+        LOG_INFO("Received authentication request for user %.*s", credentials.username_len, credentials.username);
         err_t auth_status = credentials_validate(credentials_db, &credentials);
         if (auth_status == ERR_INVALID_PARAMETERS) {
-            LOG_ERR("Failed to validate credentials: Invalid Parameters");
+            LOG_WARN("Failed to validate credentials: Invalid Parameters");
         } else if (auth_status == ERR_CREDENTIALS_USER_NOT_FOUND) {
             flags |= AUTH_FLAGS_USER_NOT_FOUND;
         } else if (auth_status == ERR_CREDENTIALS_PASSWORD_MISMATCH) {
@@ -68,7 +69,7 @@ static void udp_message_rx_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_d
         LOG_INFO(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
         handle_auth_request_validate(req_dgram, &resp_dgram);
     } else {
-        printf("Request type: %d\n", req_type);
+        LOG_WARN("Unknown request type: %d\n", req_type);
         LOG_INFO(SERVER_C_MESSAGE_ON_INVALID_REQUEST_RECEIVED);
         protocol_encode(&resp_dgram, RESPONSE_TYPE_AUTH, AUTH_FLAGS_FAILURE, 0, NULL);
     }
@@ -80,24 +81,19 @@ static void udp_message_tx_handler(udp_ctx_t* server, udp_endpoint_t* dest, udp_
     LOG_INFO(SERVER_C_MESSAGE_ON_AUTH_RESPONSE_SENT);
 }
 
-static void on_server_init(udp_ctx_t* udp) {
+int main(int argc, char* argv[]) {
+    credentials_db = credentials_init(CREDENTIALS_FILE);
+    // credentials_print(credentials_db);
+    udp_ctx_t* udp = udp_start(SERVER_C_UDP_PORT_NUMBER);
+
     LOG_INFO(SERVER_C_MESSAGE_ON_BOOTUP, udp->port);
     udp->on_rx = udp_message_rx_handler;
     udp->on_tx = udp_message_tx_handler;
-}
 
-static void on_udp_server_init_failure(start_failure_reason_t reason, int error_code) {
-    LOG_ERR(SERVER_C_MESSAGE_ON_BOOTUP_FAILURE, strerror(error_code));
-    exit(1);
-}
 
-int main(int argc, char* argv[]) {
-    credentials_db = credentials_init(CREDENTIALS_FILE);
-    credentials_print(credentials_db);
-    udp_peer_ctx = udp_start(SERVER_C_UDP_PORT_NUMBER, on_server_init, on_udp_server_init_failure);
     while(1) {
-        udp_receive(udp_peer_ctx);
+        udp_receive(udp);
     }
-    udp_stop(udp_peer_ctx);
+    udp_stop(udp);
     return 0;
 }

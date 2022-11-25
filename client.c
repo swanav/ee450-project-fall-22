@@ -12,14 +12,14 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#include "protocol.h"
 #include "data/credentials.h"
+#include "networking.h"
+#include "protocol.h"
 #include "utils/log.h"
 #include "utils/utils.h"
 #include "utils/messages.h"
 #include "utils/constants.h"
 #include "data/courses.h"
-#include "networking/tcp_client.h"
 
 LOG_TAG(client);
 

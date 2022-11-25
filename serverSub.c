@@ -2,7 +2,7 @@
 #include "messages.h"
 #include "utils.h"
 
-#include "udp_server.h"
+#include "networking.h"
 #include "courses.h"
 
 LOG_TAG(serverSub);
@@ -78,22 +78,15 @@ static void udp_message_tx_handler(udp_ctx_t* udp, udp_endpoint_t* dest, udp_dgr
     LOG_INFO(SERVER_SUB_MESSAGE_ON_RESPONSE_SENT, subject_code);
 }
 
-static void on_server_init(udp_ctx_t* udp) {
-    LOG_INFO(SERVER_SUB_MESSAGE_ON_BOOTUP, subject_code, udp->port);
-    udp->on_rx = udp_message_rx_handler;
-    udp->on_tx = udp_message_tx_handler;
-}
-
-static void on_server_init_failed(start_failure_reason_t reason, int error_code) {
-    LOG_INFO(SERVER_SUB_MESSAGE_ON_BOOTUP_FAILED, subject_code, strerror(error_code));
-    exit(1);
-}
 
 int subjectServerMain(const char* subjectCode, const uint16_t port, const char* db_file) {
     subject_code = subjectCode;
     db = courses_init(db_file);
 
-    udp_ctx_t* udp = udp_start(port, on_server_init, on_server_init_failed);
+    udp_ctx_t* udp = udp_start(port);
+    LOG_INFO(SERVER_SUB_MESSAGE_ON_BOOTUP, subject_code, udp->port);
+    udp->on_rx = udp_message_rx_handler;
+    udp->on_tx = udp_message_tx_handler;
 
     while(1) {
         udp_receive(udp);

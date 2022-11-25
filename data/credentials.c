@@ -54,6 +54,23 @@ err_t credentials_decode(credentials_t* out_credentials, const uint8_t* in_buffe
     return ERR_OK;
 }
 
+err_t credentials_request_encode(const credentials_t* credentials, udp_dgram_t* out_dgrm) {
+    return ERR_OK;
+}
+
+err_t credentials_request_decode(const udp_dgram_t* in_dgrm, credentials_t* credentials) {
+    return ERR_OK;
+}
+
+err_t credentials_response_encode(const uint8_t authentication_result, udp_dgram_t* out_dgrm) {
+    return ERR_OK;
+}
+
+err_t credentials_response_decode(const udp_dgram_t* in_dgrm, uint8_t* authentication_result) {
+    return ERR_OK;
+}
+
+
 static uint8_t shift_char(uint8_t c, int shift) {
     if (c >= 'A' && c <= 'Z') {
         c = (c - 'A' + shift) % 26 + 'A';

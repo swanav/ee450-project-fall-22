@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 #if ENABLE_DEBUG_LOGS
-#define LOG_TAG(x) __attribute__((unused)) static const char* TAG = #x;
+#define LOG_TAG(x) __attribute__((unused)) static const char* TAG = #x
 
 typedef enum {
 	LOG_LVL_OFF,

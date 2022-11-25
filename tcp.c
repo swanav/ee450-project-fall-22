@@ -1,16 +1,15 @@
+#include "networking.h"
+
 #include <errno.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "utils/log.h"
 
-#include <tcp_server.h>
-#include <log.h>
-
-LOG_TAG(tcp_server)
+LOG_TAG(tcp);
 
 // Create and Start a TCP Server
-tcp_server_t* tcp_server_start(int port, tcp_post_start_cb on_init) {
+tcp_server_t* tcp_server_start(uint16_t port) {
     tcp_server_t* server = (tcp_server_t*) calloc(1, sizeof(tcp_server_t));
 
     if (server == NULL) {
@@ -38,9 +37,6 @@ tcp_server_t* tcp_server_start(int port, tcp_post_start_cb on_init) {
                     server->max_sd = server->sd;
                     FD_SET(server->sd, &server->server_fd_set);
                     LOG_INFO("TCP Server started on port %d", port);
-                    if (on_init) {
-                        on_init(server);
-                    }
                 }
             }
         }
@@ -173,6 +169,69 @@ void tcp_server_send(tcp_server_t* server, tcp_endpoint_t* dst, tcp_sgmnt_t* seg
             LOG_ERR("Failed to send TCP Segment. Error: %s.", strerror(errno));
         } else {
             LOG_INFO("Sent %d bytes", bytes_sent);
+        }
+    }
+}
+
+tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_receive, tcp_disconnect_handler_t on_disconnect) {
+    tcp_client_t* client = malloc(sizeof(tcp_client_t));
+    if (!client) {
+        LOG_ERR("tcp_client_connect: Error allocating memory for client");
+        return NULL;
+    }
+
+    client->server = dest;
+
+    client->sd = socket(AF_INET, SOCK_STREAM, 0);
+    if (client->sd < 0) {
+        LOG_ERR("tcp_client_connect: Error creating socket");
+        free(client);
+        return NULL;
+    }
+
+    if (connect(client->sd, (struct sockaddr*)&dest->addr, dest->addr_len) < 0) {
+        LOG_ERR("tcp_client_connect: Error connecting to server");
+        free(client);
+        return NULL;
+    }
+
+    client->on_receive = on_receive;
+    client->on_disconnect = on_disconnect;
+
+    return client;
+}
+
+void tcp_client_disconnect(tcp_client_t* client) {
+    if (client) {
+        close(client->sd);
+        free(client);
+    }
+}
+
+err_t tcp_client_send(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
+    if (client) {
+        // (*sgmnt);
+        if (send(client->sd, sgmnt->data, sgmnt->data_len, 0) > 0) {
+            return ERR_OK;
+        }
+    }
+    return ERR_INVALID_PARAMETERS;
+}
+
+void tcp_client_receive(tcp_client_t* client) {
+    if (client) {
+        tcp_sgmnt_t sgmnt;
+        int bytes_read = recv(client->sd, sgmnt.data, sizeof(sgmnt.data), 0);
+        if (bytes_read > 0) {
+            sgmnt.data_len = bytes_read;
+            LOG_INFO("Received %d bytes from server", bytes_read);
+            if (client->on_receive) {
+                client->on_receive(client, &sgmnt);
+            }
+        } else {
+            if (client->on_disconnect) {
+                client->on_disconnect(client);
+            }
         }
     }
 }

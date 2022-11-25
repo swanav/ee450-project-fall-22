@@ -18,11 +18,10 @@
 #include "log.h"
 #include "protocol.h"
 #include "messages.h"
-#include "udp_server.h"
-#include "tcp_server.h"
+#include "networking.h"
 #include "utils.h"
 
-LOG_TAG("serverM");
+LOG_TAG(serverM);
 
 static udp_ctx_t* udp = NULL;
 static tcp_server_t* tcp = NULL;
@@ -34,6 +33,8 @@ static udp_endpoint_t serverEE;
 course_t* multi_course_response = NULL;
 
 static sem_t semaphore;
+
+/* ======================================== Authentication ============================================= */
 
 static void authenticate_user(credentials_t* user, tcp_endpoint_t* src) {
     if (udp) {
@@ -70,6 +71,8 @@ static void on_auth_response_received(udp_dgram_t* req_dgram) {
     LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
 }
 
+/* ============================================================================================================ */
+
 static void on_course_lookup_info_response_received(udp_dgram_t* req_dgram) {
     tcp_server_send(tcp, tcp->endpoints, req_dgram);
     LOG_INFO(SERVER_M_MESSAGE_ON_RESULT_FORWARDED);
@@ -81,10 +84,10 @@ static void request_course_lookup_info(courses_lookup_params_t* params) {
         courses_lookup_info_request_encode(params, &dgram);
         if (strncasecmp(params->course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverEE, &dgram);
-            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "EE");
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_EE);
         } else if (strncasecmp(params->course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverCS, &dgram);
-            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, "CS");
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_CS);
         } else {
             LOG_WARN("Invalid course code: %s", params->course_code);
         }
@@ -210,10 +213,6 @@ static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t
     }
 }
 
-static void on_udp_server_tx(udp_ctx_t* udp, udp_endpoint_t* dest, udp_dgram_t* datagram) {
-    // LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
-}
-
 static void on_tcp_server_rx(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* req_sgmnt) {
     uint8_t request_type = protocol_get_request_type(req_sgmnt);
     switch (request_type) {
@@ -231,31 +230,6 @@ static void on_tcp_server_rx(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t
             break;
     }
 }
-
-static void on_tcp_server_tx(tcp_server_t* tcp, tcp_endpoint_t* dest, tcp_sgmnt_t* res_sgmnt) {
-    LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
-}
-
-static void on_udp_server_init(udp_ctx_t* udp) {
-    udp->on_rx = on_udp_server_rx;
-    udp->on_tx = on_udp_server_tx;
-}
-
-static void on_tcp_server_init(tcp_server_t* tcp) {
-    tcp->on_rx = on_tcp_server_rx;
-    tcp->on_tx = on_tcp_server_tx;
-}
-
-// static void on_tcp_server_init_failure(start_failure_reason_t reason, int error_code) {
-//     LOG_ERR(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, strerror(error_code));
-//     exit(1);
-// }
-
-static void on_udp_server_init_failure(start_failure_reason_t reason, int error_code) {
-    LOG_ERR(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, strerror(error_code));
-    exit(1);
-}
-
 
 static void tick(tcp_server_t* tcp, udp_ctx_t* udp) {
     if (tcp != NULL) {
@@ -281,6 +255,7 @@ static void tick(tcp_server_t* tcp, udp_ctx_t* udp) {
         }
     }
 }
+
 int main() {
 
     sem_init(&semaphore, 0, 0);
@@ -289,18 +264,21 @@ int main() {
     SERVER_ADDR_PORT(serverCS, SERVER_CS_UDP_PORT_NUMBER);
     SERVER_ADDR_PORT(serverEE, SERVER_EE_UDP_PORT_NUMBER);
 
-    udp = udp_start(SERVER_M_UDP_PORT_NUMBER, on_udp_server_init, on_udp_server_init_failure);
+    udp = udp_start(SERVER_M_UDP_PORT_NUMBER);
     if (!udp) {
-        // LOG_ERR(SERVER_M_MESSAGE_ON_STARTUP_ERROR);
-        LOG_ERR("serverM: Error starting UDP server");
+        LOG_ERR(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, "Error starting UDP server");
         return 1;
     }
 
-    tcp = tcp_server_start(SERVER_M_TCP_PORT_NUMBER, on_tcp_server_init);
+    tcp = tcp_server_start(SERVER_M_TCP_PORT_NUMBER);
+    
     if (!tcp) {
-        LOG_ERR("serverM: Error starting TCP server");
+        LOG_ERR(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, "Error starting TCP server");
         return 1;
     }
+
+    udp->on_rx = on_udp_server_rx;
+    tcp->on_rx = on_tcp_server_rx;
 
     LOG_INFO(SERVER_M_MESSAGE_ON_BOOTUP);
 

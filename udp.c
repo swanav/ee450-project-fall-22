@@ -1,15 +1,14 @@
+#include "networking.h"
+
 #include <errno.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "utils/log.h"
 
-#include <udp_server.h>
-#include <log.h>
+LOG_TAG(udp);
 
-LOG_TAG(udp_server.c)
-
-udp_ctx_t* udp_start(uint16_t port, udp_post_start_cb on_init, udp_start_failure_callback on_failure) {
+udp_ctx_t* udp_start(uint16_t port) {
     udp_ctx_t* udp = (udp_ctx_t*) calloc(1, sizeof(udp_ctx_t));
 
     if (udp == NULL) {
@@ -20,7 +19,6 @@ udp_ctx_t* udp_start(uint16_t port, udp_post_start_cb on_init, udp_start_failure
         if (udp->sd < 0) {
             LOG_WARN("Failed to create socket on port %d. Error: %s.", port, strerror(errno));
             free(udp);
-            on_failure(UDP_START_FAILURE_REASON_SOCKET, errno);
         } else {
             struct sockaddr_in server_addr;
             server_addr.sin_family = AF_INET;
@@ -29,10 +27,8 @@ udp_ctx_t* udp_start(uint16_t port, udp_post_start_cb on_init, udp_start_failure
             if (bind(udp->sd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
                 LOG_WARN("Failed to bind socket to port %d. Error: %s.", port, strerror(errno));
                 free(udp);
-                on_failure(UDP_START_FAILURE_REASON_BIND, errno);
             } else {
                 LOG_DBG("UDP Server started on port %d", port);
-                on_init(udp);
             }
         }
     }
@@ -58,8 +54,10 @@ void udp_receive(udp_ctx_t* udp) {
         if (dgram.data_len < 0) {
             LOG_ERR("Failed to receive UDP Datagram. Error: %s.", strerror(errno));
         } else {
-            // LOG_DBG("Received UDP Datagram (%d bytes) from %s:%d", dgram.data_len, inet_ntoa(src.addr.sin_addr), ntohs(src.addr.sin_port));
-            udp->on_rx(udp, &src, &dgram);
+            // LOG_DBG("Received UDP Datagram (%ld bytes) from %s:%d", dgram.data_len, inet_ntoa(src.addr.sin_addr), ntohs(src.addr.sin_port));
+            if (udp->on_rx) {
+                udp->on_rx(udp, &src, &dgram);
+            }
         }
     }
 }
@@ -70,7 +68,9 @@ void udp_send(udp_ctx_t* udp, udp_endpoint_t* dst, udp_dgram_t* dgram) {
         if (sendto(udp->sd, dgram->data, dgram->data_len, 0, (struct sockaddr*)&dst->addr, dst->addr_len) < 0) {
             LOG_ERR("Failed to send UDP Datagram. Error: %s.", strerror(errno));
         } else {
-            udp->on_tx(udp, dst, dgram);
+            if (udp->on_tx) {
+                udp->on_tx(udp, dst, dgram);
+            }
         }
     }
 }

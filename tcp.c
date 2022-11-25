@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "utils/log.h"
+#include "utils/utils.h"
 
 LOG_TAG(tcp);
 
@@ -21,9 +22,10 @@ tcp_server_t* tcp_server_start(uint16_t port) {
             free(server);
         } else {
             struct sockaddr_in server_addr = {0};
-            server_addr.sin_family = AF_INET;
-            server_addr.sin_addr.s_addr = INADDR_ANY;
-            server_addr.sin_port = htons(port);
+            SERVER_ADDR_PORT(server_addr, port);
+            // server_addr.sin_family = AF_INET;
+            // server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            // server_addr.sin_port = htons(port);
 
             setsockopt(server->sd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
@@ -74,8 +76,8 @@ static void create_child_socket(tcp_server_t* server, int child_sd) {
         endpoint->next = server->endpoints;
         server->endpoints = endpoint;
         endpoint->addr = (struct sockaddr_in) {0};
-        endpoint->addr_len = sizeof(endpoint->addr);
-        if (getpeername(child_sd, (struct sockaddr*) &endpoint->addr, &endpoint->addr_len) < 0) {
+        socklen_t addr_len = sizeof(endpoint->addr);
+        if (getpeername(child_sd, (struct sockaddr*) &endpoint->addr, &addr_len) < 0) {
             LOG_ERR("Failed to get peer name. Error: %s.", strerror(errno));
         } else {
             LOG_INFO("Peer name: " IP_ADDR_FORMAT, IP_ADDR(endpoint));
@@ -164,7 +166,7 @@ void tcp_server_tick(tcp_server_t* server) {
 void tcp_server_send(tcp_server_t* server, tcp_endpoint_t* dst, tcp_sgmnt_t* segment) {
     if (server != NULL && dst != NULL && segment != NULL) {
         LOG_INFO("Sending TCP Segment to "IP_ADDR_FORMAT" %.*s", IP_ADDR(dst), (int) segment->data_len, segment->data);
-        int bytes_sent = sendto(dst->sd, segment->data, segment->data_len, 0, (struct sockaddr*) &dst->addr, dst->addr_len);
+        int bytes_sent = sendto(dst->sd, segment->data, segment->data_len, 0, (struct sockaddr*) &dst->addr, sizeof(socklen_t));
         if (bytes_sent < 0) {
             LOG_ERR("Failed to send TCP Segment. Error: %s.", strerror(errno));
         } else {
@@ -189,7 +191,7 @@ tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_
         return NULL;
     }
 
-    if (connect(client->sd, (struct sockaddr*)&dest->addr, dest->addr_len) < 0) {
+    if (connect(client->sd, (struct sockaddr*)&dest->addr, sizeof(socklen_t)) < 0) {
         LOG_ERR("tcp_client_connect: Error connecting to server");
         free(client);
         return NULL;

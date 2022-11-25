@@ -34,7 +34,7 @@ typedef struct __client_context_t {
     credentials_t creds;
 } client_context_t;
 
-int collect_credentials(credentials_t* user) {
+err_t collect_credentials(credentials_t* user) {
     LOG_WARN("Enter username: ");
 
 #ifdef CLIENT_TEST
@@ -46,7 +46,11 @@ int collect_credentials(credentials_t* user) {
         getc(stdin);
         user->username_len = (uint8_t) strlen((char*) user->username);
     }
-#endif 
+#endif
+    if (user->username_len < CREDENTIALS_MIN_USERNAME_LEN || user->username_len > CREDENTIALS_MAX_USERNAME_LEN) {
+        LOG_ERR("Username length not within bounds (Expected: %d ~ %d characters)", CREDENTIALS_MIN_USERNAME_LEN, CREDENTIALS_MAX_USERNAME_LEN);
+        return ERR_INVALID_PARAMETERS;
+    }
 
     LOG_WARN("Enter password: ");
 #ifdef CLIENT_TEST
@@ -59,12 +63,16 @@ int collect_credentials(credentials_t* user) {
         user->password_len = (uint8_t) strlen((char*) user->password);
     }
 #endif 
+    if (user->password_len < CREDENTIALS_MIN_PASSWORD_LEN || user->password_len > CREDENTIALS_MAX_PASSWORD_LEN) {
+        LOG_ERR("Password length not within bounds (Expected: %d ~ %d characters)", CREDENTIALS_MIN_PASSWORD_LEN, CREDENTIALS_MAX_PASSWORD_LEN);
+        return ERR_INVALID_PARAMETERS;
+    }
 
-    return 0;
+    return ERR_OK;
 }
 
 static void on_authentication_success(client_context_t* ctx, uint8_t* username, uint8_t username_len) {
-    ctx->auth_failure_count = 0;
+    ctx->auth_failure_count = AUTH_SUCCESS;
     LOG_INFO(CLIENT_MESSAGE_ON_AUTH_RESULT_SUCCESS);
 }
 
@@ -170,55 +178,105 @@ static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     }
 }
 
+struct paddings_t {
+    int course_code;
+    int credits;
+    int professor;
+    int days;
+    int course_name;
+};
+
+static void get_paddings(course_t* courses, struct paddings_t* paddings) {
+    bzero(paddings, sizeof(struct paddings_t));
+    paddings->course_code = strlen("Course Code");
+    paddings->credits = strlen("Credits");
+    paddings->professor = strlen("Professor");
+    paddings->days = strlen("Days");
+    paddings->course_name = strlen("Course Name");
+    while (courses) {
+        paddings->course_code = max(paddings->course_code, strlen(courses->course_code));
+        paddings->credits = max(paddings->credits, 1);
+        paddings->professor = max(paddings->professor, strlen(courses->professor));
+        paddings->days = max(paddings->days, strlen(courses->days));
+        paddings->course_name = max(paddings->course_name, strlen(courses->course_name));
+        courses = courses->next;
+    }
+}
+
+static void print_course_multi_lookup_result(course_t* courses) {
+
+    struct paddings_t paddings = {0};
+    get_paddings(courses, &paddings);
+
+    LOG_WARN("%*s: %*s | %*s | %*s | %*s", -1 * paddings.course_code, "Course Code", -1 * paddings.credits, "Credits", -1 * paddings.professor, "Professor", -1 * paddings.days, "Days", -1 * paddings.course_name, "Course Name");
+    while(courses != NULL) {
+        LOG_INFO("%*s: %*d | %*s | %*s | %*s", -1 * paddings.course_code, courses->course_code, -1 * paddings.credits, courses->credits, -1 * paddings.professor, courses->professor, -1 * paddings.days, courses->days, -1 * paddings.course_name, courses->course_name);
+        courses = courses->next;
+    }
+}
+
 static void on_course_multi_lookup(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_INFO("Received course multi lookup info.");
     course_t* courses = courses_lookup_multiple_response_decode(sgmnt);
-    LOG_WARN("Course Code: Credits, Professor, Days, Course Name");
-    while(courses != NULL) {
-        LOG_INFO("%s: %d, %s, %s, %s", courses->course_code, courses->credits, courses->professor, courses->days, courses->course_name);
-        courses = courses->next;
-    }
+    print_course_multi_lookup_result(courses);
     courses_free(courses);
+}
+
+static err_t create_timeout(struct timespec* ts, time_t sec, time_t nsec) {
+    if (clock_gettime(CLOCK_REALTIME, ts) == -1) {
+        LOG_ERR("Could not get current time.");
+        return ERR_INVALID_PARAMETERS;
+    }
+    ts->tv_sec += sec;
+    ts->tv_nsec += nsec;
+    return ERR_OK;
 }
 
 static void* user_input_task(void* params) {
 
     client_context_t* ctx = (client_context_t*) params;
+    struct timespec ts = {0};
+
     sem_wait(&ctx->semaphore);
 
     do {
         bzero(&ctx->creds, sizeof(credentials_t));
-        collect_credentials(&ctx->creds);
-        authenticate_user(ctx);
-        sem_wait(&ctx->semaphore);
-    } while(ctx->auth_failure_count != 0);
+        bzero(&ts, sizeof(ts));
+        if (collect_credentials(&ctx->creds) == ERR_OK) {
+            authenticate_user(ctx);
+            create_timeout(&ts, TCP_QUERY_TIMEOUT_DELAY_S, TCP_QUERY_TIMEOUT_DELAY_NS);
+            if (sem_timedwait(&ctx->semaphore, &ts) < 0 && errno == ETIMEDOUT) {
+                LOG_ERR(CLIENT_MESSAGE_ON_NETWORK_REQUEST_TIMEOUT);
+            }
+        }
+    } while(ctx->auth_failure_count != AUTH_SUCCESS);
 
-    uint8_t course_code[100] = {0};
-    uint8_t category[20] = {0};
+    LOG_INFO("-------- User \"%.*s\" Authenticated --------", ctx->creds.username_len, ctx->creds.username);
+
+
+    uint8_t course_code[COURSE_NAME_BUFFER_SIZE] = {0};
+    uint8_t category[COURSE_CATEGORY_BUFFER_SIZE] = {0};
 
     while(1) {
         bzero(course_code, sizeof(course_code));
         bzero(category, sizeof(category));
+        bzero(&ts, sizeof(ts));
+
         LOG_INFO("------------Start a new request------------");
         int count = new_request_prompt(course_code, sizeof(course_code), category, sizeof(category));
         send_request(ctx, count, course_code, sizeof(course_code), category, sizeof(category));
-        sem_wait(&ctx->semaphore);
+        create_timeout(&ts, TCP_QUERY_TIMEOUT_DELAY_S, TCP_QUERY_TIMEOUT_DELAY_NS);
+        if (sem_timedwait(&ctx->semaphore, &ts) < 0 && errno == ETIMEDOUT) {
+            LOG_ERR(CLIENT_MESSAGE_ON_NETWORK_REQUEST_TIMEOUT);
+        }
         LOG_INFO("------------End of Request------------\r\n");
     }
 
     return NULL;
 }
 
-static void on_tcp_disconnect(tcp_client_t* clientparams) {
-    exit(1);
-}
-
 static void on_receive(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
     client_context_t* ctx = (client_context_t*) client->user_data;
-    if (sgmnt->data_len == 0) {
-        LOG_ERR("Received empty segment.");
-        return;
-    }
     response_type_t response_type = protocol_get_request_type(sgmnt);
     switch (response_type) {
         case RESPONSE_TYPE_AUTH:
@@ -237,11 +295,16 @@ static void on_receive(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
     sem_post(&ctx->semaphore);
 }
 
+static void on_tcp_disconnect(tcp_client_t* clientparams) {
+    LOG_ERR("Client disconnected from serverM.");
+    exit(1);
+}
+
 static void* network_thread_task(void* params) {
     client_context_t* ctx = (client_context_t*) params;
 
     tcp_endpoint_t dst = {0};
-    SERVER_ADDR_PORT(dst, SERVER_M_TCP_PORT_NUMBER);
+    SERVER_ADDR_PORT(dst.addr, SERVER_M_TCP_PORT_NUMBER);
 
     ctx->client = tcp_client_connect(&dst, on_receive, on_tcp_disconnect);
     on_setup_complete(ctx);

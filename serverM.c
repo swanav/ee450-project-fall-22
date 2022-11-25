@@ -90,6 +90,7 @@ static void request_course_lookup_info(courses_lookup_params_t* params) {
             LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_CS);
         } else {
             LOG_WARN("Invalid course code: %s", params->course_code);
+            sem_post(&semaphore);
         }
     }
 }
@@ -106,6 +107,7 @@ static void request_course_details(uint8_t* course_code, uint8_t course_code_len
             LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_CS);
         } else {
             LOG_WARN("Invalid course code: %.*s", course_code_len, course_code);
+            sem_post(&semaphore);
         }
     }
 }
@@ -260,9 +262,9 @@ int main() {
 
     sem_init(&semaphore, 0, 0);
 
-    SERVER_ADDR_PORT(serverC, SERVER_C_UDP_PORT_NUMBER);
-    SERVER_ADDR_PORT(serverCS, SERVER_CS_UDP_PORT_NUMBER);
-    SERVER_ADDR_PORT(serverEE, SERVER_EE_UDP_PORT_NUMBER);
+    SERVER_ADDR_PORT(serverC.addr, SERVER_C_UDP_PORT_NUMBER);
+    SERVER_ADDR_PORT(serverCS.addr, SERVER_CS_UDP_PORT_NUMBER);
+    SERVER_ADDR_PORT(serverEE.addr, SERVER_EE_UDP_PORT_NUMBER);
 
     udp = udp_start(SERVER_M_UDP_PORT_NUMBER);
     if (!udp) {

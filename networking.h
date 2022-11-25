@@ -8,7 +8,7 @@
 
 struct ip_dest_t {
     struct sockaddr_in addr;
-    socklen_t addr_len;
+    // socklen_t addr_len;
     int sd;
     struct ip_dest_t *next;
 };

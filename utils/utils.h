@@ -16,11 +16,10 @@
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
-#define SERVER_ADDR_PORT(server, port) do { \
-    server.addr.sin_family = AF_INET; \
-    server.addr.sin_addr.s_addr = INADDR_ANY; \
-    server.addr.sin_port = htons(port); \
-    server.addr_len = sizeof(struct sockaddr_in); \
+#define SERVER_ADDR_PORT(addr, port) do { \
+    addr.sin_family = AF_INET; \
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); \
+    addr.sin_port = htons(port); \
 } while (0)
 
 

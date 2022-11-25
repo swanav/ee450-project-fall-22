@@ -7,12 +7,14 @@
 
 #include "../protocol.h"
 
-#define CREDENTIALS_MAX_USERNAME_LEN 32
-#define CREDENTIALS_MAX_PASSWORD_LEN 32
+#define CREDENTIALS_MIN_USERNAME_LEN  5
+#define CREDENTIALS_MIN_PASSWORD_LEN  5
+#define CREDENTIALS_MAX_USERNAME_LEN 50
+#define CREDENTIALS_MAX_PASSWORD_LEN 50
 
 typedef struct __credentials_t {
-    uint8_t username[CREDENTIALS_MAX_USERNAME_LEN];
-    uint8_t password[CREDENTIALS_MAX_PASSWORD_LEN];
+    uint8_t username[CREDENTIALS_MAX_USERNAME_LEN + 1];
+    uint8_t password[CREDENTIALS_MAX_PASSWORD_LEN + 1];
     uint8_t username_len;
     uint8_t password_len;
     struct __credentials_t* next;

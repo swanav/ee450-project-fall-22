@@ -1,7 +1,7 @@
 #include "courses.h"
-#include <log.h>
 #include <stdio.h>
-#include <utils.h>
+#include "../utils.h"
+#include "../log.h"
 #include "../protocol.h"
 
 LOG_TAG(courses);

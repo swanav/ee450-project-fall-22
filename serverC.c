@@ -25,7 +25,7 @@ authentication status.
 #include "messages.h"
 #include "networking.h"
 #include "utils.h"
-#include "data/credentials.h"
+#include "credentials.h"
 
 #include "protocol.h"
 

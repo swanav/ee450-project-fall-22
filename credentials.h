@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-#include "../utils/error.h"
+#include "error.h"
 
-#include "../protocol.h"
+#include "protocol.h"
 
 /**
  * @brief Encrypt the given credentials according to the given method

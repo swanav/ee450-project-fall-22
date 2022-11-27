@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "../networking.h"
-#include "../utils/error.h"
+#include "../error.h"
 #include "../protocol.h"
 
 typedef struct __lookup_params_t {

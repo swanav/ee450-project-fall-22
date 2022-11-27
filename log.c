@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "log.h"
-#include "../protocol.h"
+#include "protocol.h"
 
 #define LOG_CYAN_STR        "\033[0;36m"
 #define LOG_CYAN_BOLD_STR   "\033[1;36m"

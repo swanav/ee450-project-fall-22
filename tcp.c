@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "utils/log.h"
-#include "utils/utils.h"
+#include "log.h"
+#include "utils.h"
 
 LOG_TAG(tcp);
 

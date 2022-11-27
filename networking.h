@@ -4,7 +4,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include "../utils/error.h"
+#include "error.h"
 
 struct ip_dest_t {
     struct sockaddr_in addr;

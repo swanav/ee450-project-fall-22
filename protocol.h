@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "networking.h"
-#include "utils/constants.h"
+#include "constants.h"
 
 
 #define REQUEST_RESPONSE_TYPE_OFFSET                0

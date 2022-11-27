@@ -4,6 +4,7 @@
 
 #include "networking.h"
 #include "courses.h"
+#include "fileio.h"
 
 LOG_TAG(serverSub);
 
@@ -81,7 +82,7 @@ static void udp_message_tx_handler(udp_ctx_t* udp, udp_endpoint_t* dest, udp_dgr
 
 int subjectServerMain(const char* subjectCode, const uint16_t port, const char* db_file) {
     subject_code = subjectCode;
-    db = courses_init(db_file);
+    db = fileio_department_server_db_create(db_file);
 
     udp_ctx_t* udp = udp_start(port);
     LOG_INFO(SERVER_SUB_MESSAGE_ON_BOOTUP, subject_code, udp->port);
@@ -92,6 +93,6 @@ int subjectServerMain(const char* subjectCode, const uint16_t port, const char* 
         udp_receive(udp);
     }
     udp_stop(udp);
-    courses_free(db);
+    fileio_department_server_db_free(db);
     return 0;
 }

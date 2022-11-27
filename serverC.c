@@ -20,6 +20,7 @@ authentication status.
 #include <sys/wait.h>
 
 #include "constants.h"
+#include "fileio.h"
 #include "log.h"
 #include "messages.h"
 #include "networking.h"
@@ -79,8 +80,8 @@ static void udp_message_tx_handler(udp_ctx_t* server, udp_endpoint_t* dest, udp_
 }
 
 int main(int argc, char* argv[]) {
-    credentials_db = credentials_init(CREDENTIALS_FILE);
-    credentials_print(credentials_db);
+    credentials_db = fileio_credential_server_db_create(CREDENTIALS_FILE);
+    log_credentials(credentials_db);
 
     udp_ctx_t* udp = udp_start(SERVER_C_UDP_PORT_NUMBER);
     LOG_INFO(SERVER_C_MESSAGE_ON_BOOTUP, udp->port);

@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "log.h"
-
+#include "../protocol.h"
 
 #define LOG_CYAN_STR        "\033[0;36m"
 #define LOG_CYAN_BOLD_STR   "\033[1;36m"
@@ -94,3 +94,38 @@ void log_dbg_buffer(const char* tag, const char* buffer_name, const uint8_t* buf
 	}
 }
 
+void log_course(const void* course) {
+#if ENABLE_DEBUG_LOGS
+	static const char* TAG = "course";
+	const course_t* ptr = (const course_t*)course;
+    LOG_DBG("%s %s %s %s %d", ptr->course_code, ptr->course_name, ptr->professor, ptr->days, ptr->credits);
+#endif // ENABLE_DEBUG_LOGS
+}
+
+void log_courses(const void* head)  {
+#if ENABLE_DEBUG_LOGS
+	const course_t* ptr = (const course_t*)head;
+    while (ptr != NULL) {
+        courses_print(ptr);
+        ptr = ptr->next;
+    }
+#endif // ENABLE_DEBUG_LOGS
+}
+
+void log_credential(const void* credentials) {
+#if ENABLE_DEBUG_LOGS
+	static const char* TAG = "credential";
+	const credentials_t* ptr = (const credentials_t*)credentials;
+	LOG_DBG("%s %s", ptr->username, ptr->password);
+#endif // ENABLE_DEBUG_LOGS
+}
+
+void log_credentials(const void* head) {
+#if ENABLE_DEBUG_LOGS
+	const credentials_t* ptr = (const credentials_t*) head;
+	while (ptr != NULL) {
+		log_credential(ptr);
+		ptr = ptr->next;
+	}
+#endif // ENABLE_DEBUG_LOGS
+}

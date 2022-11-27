@@ -22,10 +22,6 @@
     addr.sin_port = htons(port); \
 } while (0)
 
-
-FILE* csv_open(const char* file_name);
-void csv_close(FILE* fp);
-
 /**
  * @brief Trim left whitespace from the string
  * 

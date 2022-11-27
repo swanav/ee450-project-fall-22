@@ -41,7 +41,9 @@ err_t credentials_encode(const credentials_t* in_credentials, uint8_t* out_buffe
 // Used by serverC to decode the credentials from serverM
 err_t credentials_decode(credentials_t* out_credentials, const uint8_t* in_buffer, const uint8_t in_buffer_len) {
 
-    if (out_credentials == NULL || (in_buffer_len < CREDENTIALS_HEADER_LEN) || (in_buffer_len < CREDENTIALS_TOTAL_LEN(in_buffer))) {
+    if (out_credentials == NULL || 
+        in_buffer_len < CREDENTIALS_HEADER_LEN || 
+        in_buffer_len < CREDENTIALS_TOTAL_LEN(in_buffer)) {
         return ERR_INVALID_PARAMETERS;
     }
 
@@ -55,6 +57,20 @@ err_t credentials_decode(credentials_t* out_credentials, const uint8_t* in_buffe
 }
 
 err_t credentials_request_encode(const credentials_t* credentials, udp_dgram_t* out_dgrm) {
+    // uint8_t credentials_buffer[sizeof(credentials_t)];
+    // uint8_t credentials_out_len = 0;
+    // if (credentials_encode(&ctx->creds, credentials_buffer, sizeof(credentials_buffer), &credentials_out_len)) {
+    //     LOG_ERR("Failed to encode credentials.");
+    //     return;
+    // }
+    // tcp_sgmnt_t sgmnt = {0};
+    // protocol_encode(&sgmnt, REQUEST_TYPE_AUTH, 0, credentials_out_len, credentials_buffer);
+    // if (tcp_client_send(ctx->client, &sgmnt) == ERR_OK) {
+    //     LOG_INFO(CLIENT_MESSAGE_ON_AUTH_REQUEST, ctx->creds.username_len, ctx->creds.username);
+    // }
+
+    // uint8_t buffer[sizeof(out_dgrm->data) - PROTOCOL_HEADER_LEN];
+
     return ERR_OK;
 }
 
@@ -118,73 +134,6 @@ err_t credentials_encrypt(const credentials_t* in_credentials, credentials_t* ou
 
 uint8_t credentials_len(const credentials_t* credentials) {
     return CREDENTIALS_HEADER_LEN + credentials->username_len + credentials->password_len;
-}
-
-
-
-credentials_t* credentials_init(const char* filename) {
-
-    credentials_t* credentials = NULL;
-
-    if (filename == NULL) {
-        return NULL;
-    }
-
-    FILE* fp = csv_open(filename);
-    char line[1024];
-
-    if (fp == NULL) return NULL;
-
-    while (fgets(line, sizeof(line), fp)) {
-        char* token = strtok(line, ",\r\n");
-        if (token == NULL) {
-            continue;
-        }
-
-        credentials_t* ptr = malloc(sizeof(credentials_t));
-        if (ptr == NULL) {
-            LOG_ERR("Failed to allocate memory for credentials");
-            return NULL;
-        }
-        bzero(ptr, sizeof(credentials_t));
-
-        ptr->username_len = strlen(token);
-        if (ptr->username_len > CREDENTIALS_MAX_USERNAME_LEN) {
-            LOG_ERR("Username is too long");
-            return NULL;
-        }
-        memcpy(ptr->username, token, ptr->username_len);
-
-        token = strtok(NULL, ",\r\n");
-        if (token == NULL) {
-            continue;
-        }
-
-        ptr->password_len = strlen(token);
-        if (ptr->password_len > CREDENTIALS_MAX_PASSWORD_LEN) {
-            LOG_ERR("Password is too long");
-            return NULL;
-        }
-        memcpy(ptr->password, token, ptr->password_len);
-
-        if (credentials != NULL) {
-            ptr->next = credentials;
-        }
-
-        credentials = ptr;
-    }
-
-    csv_close(fp);
-
-    return credentials;
-}
-
-void credentials_free(credentials_t* credentials) {
-    while (credentials != NULL) {
-        credentials_t* ptr = credentials;
-        credentials = credentials->next;
-        free(ptr);
-    }
 }
 
 void credentials_print(const credentials_t* credentials) {

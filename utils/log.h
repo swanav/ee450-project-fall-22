@@ -61,4 +61,29 @@ typedef enum {
 void log_text(const LogLevel_t logLevel, const char* tag, const char* format, ...);
 void log_dbg_buffer(const char* tag, const char* buffer_name, const uint8_t* buffer, size_t len);
 
+/**
+ * 
+*/
+void log_course(const void* course);
+
+/**
+ * @brief Print the given courses linked list
+ * 
+*/
+void log_courses(const void* head);
+
+/**
+ * @brief Print the given credentials
+ * 
+ * @param credentials The credentials to print
+ */
+void log_credential(const void* credentials);
+
+/**
+ * @brief Print the given credentials linked list
+ * 
+ * @param credentials The credentials linked list to print
+ */
+void log_credentials(const void* head);
+
 #endif // _LOG_H_

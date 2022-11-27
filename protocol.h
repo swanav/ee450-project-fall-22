@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "networking.h"
+#include "utils/constants.h"
 
 #define DEPARTMENT_PREFIX_EE                        "EE"
 #define DEPARTMENT_PREFIX_CS                        "CS"
@@ -64,7 +65,22 @@ typedef uint8_t courses_lookup_category_t;
 #define COURSE_LOOKUP_MASK_COURSE_NAME(x)           (x & COURSE_LOOKUP_FLAGS_COURSE_NAME)
 #define COURSE_LOOKUP_MASK_INVALID(x)               (x & COURSE_LOOKUP_FLAGS_INVALID)
 
+typedef struct __credentials_t {
+    uint8_t username[CREDENTIALS_MAX_USERNAME_LEN + 1];
+    uint8_t password[CREDENTIALS_MAX_PASSWORD_LEN + 1];
+    uint8_t username_len;
+    uint8_t password_len;
+    struct __credentials_t* next;
+} credentials_t;
 
+typedef struct __course_t {
+    char course_code[32];
+    int credits;
+    char professor[64];
+    char days[32];
+    char course_name[128];
+    struct __course_t* next;
+} course_t;
 
 // Create UDP or TCP packet based on given buffer
 void protocol_encode(struct __message_t* message, uint8_t type, uint8_t flags, uint16_t payload_len, uint8_t* payload);

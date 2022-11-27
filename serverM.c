@@ -157,9 +157,7 @@ void* multi_request_thread(void* params) {
 
     LOG_DBG("Multi request thread finished");
 
-    courses_printall(multi_course_response);
-
-    LOG_DBG("Printed all courses");
+    log_courses(multi_course_response);
 
     tcp_sgmnt_t sgmnt = {0};
 

@@ -219,7 +219,7 @@ static void on_course_multi_lookup(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_DBG("Received course multi lookup info.");
     course_t* courses = courses_lookup_multiple_response_decode(sgmnt);
     print_course_multi_lookup_result(courses);
-    courses_free(courses);
+    // courses_free(courses);
 }
 
 static err_t create_timeout(struct timespec* ts, time_t sec, time_t nsec) {

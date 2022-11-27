@@ -21,21 +21,21 @@ serverM: serverM.c utils/** data/** out_dir
 serverC: serverC.c utils/**  out_dir
 	gcc -g -Wall -Iutils \
 		-o $(OUTPUT_DIR)/serverC \
-			serverC.c protocol.c udp.c \
+			serverC.c fileio.c protocol.c udp.c \
 			data/courses.c data/credentials.c \
 			utils/log.c utils/utils.c
 
 serverCS: serverCS.c utils/** data/** out_dir
 	gcc -g -Wall -Idata -Iutils \
 		-o $(OUTPUT_DIR)/serverCS \
-			serverCS.c serverSub.c protocol.c udp.c \
+			serverCS.c fileio.c protocol.c serverSub.c udp.c \
 			data/courses.c \
 			utils/log.c utils/utils.c
 
 serverEE: serverEE.c utils/** data/** out_dir
 	gcc -g -Wall -Idata -Iutils \
 		-o $(OUTPUT_DIR)/serverEE \
-			serverEE.c protocol.c serverSub.c udp.c \
+			serverEE.c fileio.c protocol.c serverSub.c udp.c \
 			data/courses.c \
 			utils/log.c utils/utils.c
 

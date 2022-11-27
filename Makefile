@@ -6,7 +6,7 @@ client: client.c utils/**  out_dir
 	gcc -g -Wall -Iutils \
 		-o $(OUTPUT_DIR)/client \
 			client.c protocol.c tcp.c \
-			data/courses.c data/credentials.c \
+			data/courses.c \
 			utils/log.c utils/utils.c \
 		-lpthread
 
@@ -28,14 +28,14 @@ serverC: serverC.c utils/**  out_dir
 serverCS: serverCS.c utils/** data/** out_dir
 	gcc -g -Wall -Idata -Iutils \
 		-o $(OUTPUT_DIR)/serverCS \
-			serverCS.c fileio.c protocol.c serverSub.c udp.c \
+			serverCS.c fileio.c protocol.c department_server.c udp.c \
 			data/courses.c \
 			utils/log.c utils/utils.c
 
 serverEE: serverEE.c utils/** data/** out_dir
 	gcc -g -Wall -Idata -Iutils \
 		-o $(OUTPUT_DIR)/serverEE \
-			serverEE.c fileio.c protocol.c serverSub.c udp.c \
+			serverEE.c fileio.c protocol.c department_server.c udp.c \
 			data/courses.c \
 			utils/log.c utils/utils.c
 

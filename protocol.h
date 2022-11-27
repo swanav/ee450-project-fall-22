@@ -5,9 +5,6 @@
 #include "networking.h"
 #include "utils/constants.h"
 
-#define DEPARTMENT_PREFIX_EE                        "EE"
-#define DEPARTMENT_PREFIX_CS                        "CS"
-#define DEPARTMENT_PREFIX_LEN                       2
 
 #define REQUEST_RESPONSE_TYPE_OFFSET                0
 #define REQUEST_RESPONSE_FLAGS_OFFSET               1

@@ -1,12 +1,12 @@
+#include "courses.h"
+#include "department_server.h"
+#include "fileio.h"
 #include "log.h"
 #include "messages.h"
+#include "networking.h"
 #include "utils.h"
 
-#include "networking.h"
-#include "courses.h"
-#include "fileio.h"
-
-LOG_TAG(serverSub);
+LOG_TAG(department_server);
 
 static course_t* db = NULL;
 static const char* subject_code = NULL;
@@ -80,7 +80,7 @@ static void udp_message_tx_handler(udp_ctx_t* udp, udp_endpoint_t* dest, udp_dgr
 }
 
 
-int subjectServerMain(const char* subjectCode, const uint16_t port, const char* db_file) {
+int department_server_main(const char* subjectCode, const uint16_t port, const char* db_file) {
     subject_code = subjectCode;
     db = fileio_department_server_db_create(db_file);
 

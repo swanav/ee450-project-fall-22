@@ -11,7 +11,13 @@
 #define SERVER_M_TCP_PORT_NUMBER  25000 + USC_ID_LAST_3
 #define CLIENT_PORT_NUMBER    // DYNAMICALLY ASSIGNED PORT NUMBER
 
+#define DEPARTMENT_PREFIX_EE                        "EE"
+#define DEPARTMENT_PREFIX_CS                        "CS"
+#define DEPARTMENT_PREFIX_LEN                       2
+
 #define CREDENTIALS_FILE "cred.txt"
+#define DEPARTMENT_DB_FILE_CS "cs.txt"
+#define DEPARTMENT_DB_FILE_EE "ee.txt"
 
 #define AUTH_SUCCESS                    -1
 

@@ -106,7 +106,7 @@ void log_courses(const void* head)  {
 #if ENABLE_DEBUG_LOGS
 	const course_t* ptr = (const course_t*)head;
     while (ptr != NULL) {
-        courses_print(ptr);
+        log_course(ptr);
         ptr = ptr->next;
     }
 #endif // ENABLE_DEBUG_LOGS

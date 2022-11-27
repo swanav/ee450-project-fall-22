@@ -39,9 +39,7 @@ static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram
 
     credentials_t credentials = {0};
 
-    err_t result = credentials_decode(&credentials, (const uint8_t*) req_dgram->data + REQUEST_RESPONSE_HEADER_LEN, req_dgram->data_len - REQUEST_RESPONSE_HEADER_LEN);
-
-    if (result == ERR_INVALID_PARAMETERS) {
+    if (protocol_authentication_request_decode(req_dgram, &credentials) != ERR_OK) {
         LOG_ERR("Failed to parse authentication request");
     } else {
         LOG_INFO("Received authentication request for user %.*s", credentials.username_len, credentials.username);
@@ -56,7 +54,7 @@ static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram
             flags = AUTH_FLAGS_SUCCESS;
         }
     }
-    protocol_encode(res_dgram, RESPONSE_TYPE_AUTH, flags, 0, NULL);
+    protocol_authentication_response_encode(flags, res_dgram);
 }
 
 static void udp_message_rx_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_dgram_t* req_dgram) {

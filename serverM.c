@@ -36,34 +36,26 @@ static sem_t semaphore;
 
 /* ======================================== Authentication ============================================= */
 
-static void authenticate_user(credentials_t* user, tcp_endpoint_t* src) {
+static void authenticate_user(credentials_t* user) {
     if (udp) {
         udp_dgram_t dgram = {0};
         credentials_t enc_user = {0};
-        uint8_t data_buffer[1024] = {0};
-        uint8_t data_buffer_len = 0;
 
-        credentials_encrypt(user, &enc_user);
-        credentials_encode(&enc_user, data_buffer, sizeof(data_buffer), &data_buffer_len);
-
-        protocol_encode(&dgram, REQUEST_TYPE_AUTH, 0, data_buffer_len, data_buffer);
-
-        udp_send(udp, &serverC, &dgram);
-        LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
+        if (credentials_encrypt(user, &enc_user) == ERR_OK) {
+            if (protocol_authentication_request_encode(&enc_user, &dgram) == ERR_OK) {
+                udp_send(udp, &serverC, &dgram);
+                LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
+            } 
+        }
     }
 }
 
 static void on_auth_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* sgmnt) {
-    uint8_t buffer[128];
-    uint16_t buffer_size = 0;
     credentials_t credentials = {0};
-
-    protocol_decode(sgmnt, NULL, NULL, &buffer_size, sizeof(buffer), buffer);
-    credentials_decode(&credentials, buffer, buffer_size);
-
-    LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_RECEIVED, credentials.username, ntohs(src->addr.sin_port));
-
-    authenticate_user(&credentials, src);
+    if (protocol_authentication_request_decode(sgmnt, &credentials) == ERR_OK) {
+        LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_RECEIVED, credentials.username, ntohs(src->addr.sin_port));
+        authenticate_user(&credentials);
+    }
 }
 
 static void on_auth_response_received(udp_dgram_t* req_dgram) {

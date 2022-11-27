@@ -79,9 +79,9 @@ static void on_authentication_success(client_context_t* ctx, uint8_t* username, 
 static void on_authentication_failure(client_context_t* ctx, uint8_t* username, uint8_t username_len, uint8_t flags) {
     LOG_ERR(CLIENT_MESSAGE_ON_AUTH_RESULT_FAILURE);
 
-    if (flags & AUTH_FLAGS_USER_NOT_FOUND) {
+    if (AUTH_MASK_USER_NOT_FOUND(flags)) {
         LOG_ERR("User not found");
-    } else if (flags & AUTH_FLAGS_PASSWORD_MISMATCH) {
+    } else if (AUTH_MASK_PASSWORD_MISMATCH(flags)) {
         LOG_ERR("Password mismatch");
     }
 
@@ -96,26 +96,22 @@ static void on_authentication_failure(client_context_t* ctx, uint8_t* username, 
 static void on_auth_result(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_INFO(CLIENT_MESSAGE_ON_AUTH_RESULT, ctx->creds.username_len, ctx->creds.username, ntohs(ctx->client->server->addr.sin_port));
     uint8_t flags = 0;
-    uint16_t payload_len = 0;
-    protocol_decode(sgmnt, NULL, &flags, &payload_len, 0, NULL);
-    if (payload_len == 0) {
-        if (AUTH_MASK_SUCCESS(flags)) {
-            on_authentication_success(ctx, ctx->creds.username, ctx->creds.username_len);
-        } else {
-            on_authentication_failure(ctx, ctx->creds.username, ctx->creds.username_len, flags);
-        }
+    protocol_authentication_response_decode(sgmnt, &flags);
+    if (AUTH_MASK_SUCCESS(flags)) {
+        on_authentication_success(ctx, ctx->creds.username, ctx->creds.username_len);
+    } else {
+        on_authentication_failure(ctx, ctx->creds.username, ctx->creds.username_len, flags);
     }
 }
 
 static void authenticate_user(client_context_t* ctx) {
-    uint8_t credentials_buffer[sizeof(credentials_t)];
-    uint8_t credentials_out_len = 0;
-    if (credentials_encode(&ctx->creds, credentials_buffer, sizeof(credentials_buffer), &credentials_out_len)) {
-        LOG_ERR("Failed to encode credentials.");
+    tcp_sgmnt_t sgmnt = {0};
+
+    if (protocol_authentication_request_encode(&ctx->creds, &sgmnt) != ERR_OK) {
+        LOG_ERR("Failed to encode authentication request.");
         return;
     }
-    tcp_sgmnt_t sgmnt = {0};
-    protocol_encode(&sgmnt, REQUEST_TYPE_AUTH, 0, credentials_out_len, credentials_buffer);
+
     if (tcp_client_send(ctx->client, &sgmnt) == ERR_OK) {
         LOG_INFO(CLIENT_MESSAGE_ON_AUTH_REQUEST, ctx->creds.username_len, ctx->creds.username);
     }

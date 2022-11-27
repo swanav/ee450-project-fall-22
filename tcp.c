@@ -121,7 +121,7 @@ static tcp_endpoint_t* get_endpoint(tcp_server_t* server, int sd) {
 // Receive data from a Child Socket
 void tcp_server_receive(tcp_server_t* server, int child_sd) {
     uint8_t buffer[1024] = {0};
-    int bytes_read = read(child_sd, buffer, sizeof(buffer));
+    size_t bytes_read = read(child_sd, buffer, sizeof(buffer));
     if (bytes_read < 0) {
         LOG_ERR("Failed to read from socket. Error: %s.", strerror(errno));
     } else if (bytes_read == 0) {
@@ -129,7 +129,7 @@ void tcp_server_receive(tcp_server_t* server, int child_sd) {
         close_child_socket(server, child_sd);
     } else {
         tcp_endpoint_t* endpoint = get_endpoint(server, child_sd);
-        LOG_DBG("Received %d bytes from "IP_ADDR_FORMAT" : %s", bytes_read, IP_ADDR(endpoint), buffer);
+        LOG_DBG("Received %ld bytes from "IP_ADDR_FORMAT" : %s", bytes_read, IP_ADDR(endpoint), buffer);
         // LOG_BUFFER(buffer, bytes_read);
         tcp_sgmnt_t sgmnt = {0};
         memcpy(sgmnt.data, buffer, bytes_read);
@@ -166,11 +166,11 @@ void tcp_server_tick(tcp_server_t* server) {
 void tcp_server_send(tcp_server_t* server, tcp_endpoint_t* dst, tcp_sgmnt_t* segment) {
     if (server != NULL && dst != NULL && segment != NULL) {
         LOG_DBG("Sending TCP Segment to "IP_ADDR_FORMAT" %.*s", IP_ADDR(dst), (int) segment->data_len, segment->data);
-        int bytes_sent = sendto(dst->sd, segment->data, segment->data_len, 0, (struct sockaddr*) &dst->addr, sizeof(struct sockaddr));
+        size_t bytes_sent = sendto(dst->sd, segment->data, segment->data_len, 0, (struct sockaddr*) &dst->addr, sizeof(struct sockaddr));
         if (bytes_sent < 0) {
             LOG_ERR("Failed to send TCP Segment. Error: %s.", strerror(errno));
         } else {
-            LOG_DBG("Sent %d bytes", bytes_sent);
+            LOG_DBG("Sent %ld bytes", bytes_sent);
         }
     }
 }
@@ -212,8 +212,8 @@ void tcp_client_disconnect(tcp_client_t* client) {
 
 err_t tcp_client_send(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
     if (client) {
-        // (*sgmnt);
-        if (send(client->sd, sgmnt->data, sgmnt->data_len, 0) > 0) {
+        if (send(client->sd, sgmnt->data, sgmnt->data_len, 0) == sgmnt->data_len) {
+            LOG_DBG("Sending TCP Segment (%ld bytes) to server", sgmnt->data_len);
             return ERR_OK;
         }
     }
@@ -223,10 +223,10 @@ err_t tcp_client_send(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
 void tcp_client_receive(tcp_client_t* client) {
     if (client) {
         tcp_sgmnt_t sgmnt;
-        int bytes_read = recv(client->sd, sgmnt.data, sizeof(sgmnt.data), 0);
+        size_t bytes_read = recv(client->sd, sgmnt.data, sizeof(sgmnt.data), 0);
         if (bytes_read > 0) {
             sgmnt.data_len = bytes_read;
-            LOG_DBG("Received %d bytes from server", bytes_read);
+            LOG_DBG("Received %ld bytes from server", bytes_read);
             if (client->on_receive) {
                 client->on_receive(client, &sgmnt);
             }

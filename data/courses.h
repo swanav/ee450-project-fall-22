@@ -13,11 +13,6 @@ typedef struct __lookup_params_t {
     char course_code[64];
 } courses_lookup_params_t;
 
-// course_t* courses_init(const char* filename);
-// void courses_free(course_t* head);
-// void courses_print(course_t* course);
-// void courses_printall(course_t* course);
-
 err_t courses_lookup_info_request_encode(courses_lookup_params_t* params, struct __message_t* out_msg);
 err_t courses_lookup_info_request_decode(struct __message_t* msg, courses_lookup_params_t* params);
 

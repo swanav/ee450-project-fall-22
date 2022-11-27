@@ -42,6 +42,13 @@ typedef uint8_t auth_flags_t;
 #define AUTH_MASK_USER_NOT_FOUND(x)                 (x & AUTH_FLAGS_USER_NOT_FOUND)
 #define AUTH_MASK_PASSWORD_MISMATCH(x)              (x & AUTH_FLAGS_PASSWORD_MISMATCH)
 
+#define CREDENTIALS_USERNAME_LEN_OFFSET 0
+#define CREDENTIALS_PASSWORD_LEN_OFFSET 1
+
+#define CREDENTIALS_HEADER_LEN 2
+#define CREDENTIALS_USERNAME_LEN(b) b[CREDENTIALS_USERNAME_LEN_OFFSET]
+#define CREDENTIALS_PASSWORD_LEN(b) b[CREDENTIALS_PASSWORD_LEN_OFFSET]
+#define CREDENTIALS_TOTAL_LEN(b) CREDENTIALS_HEADER_LEN + CREDENTIALS_USERNAME_LEN(b) + CREDENTIALS_PASSWORD_LEN(b)
 
 typedef uint8_t courses_lookup_category_t;
 #define COURSES_LOOKUP_CATEGORY_COURSE_CODE         0x50
@@ -86,12 +93,55 @@ typedef struct __course_t {
 void protocol_encode(struct __message_t* message, uint8_t type, uint8_t flags, uint16_t payload_len, uint8_t* payload);
 
 // Recreate buffer from given UDP or TCP packet
-void protocol_decode(struct __message_t* message, request_type_t* request_type, uint8_t* flags, uint16_t *out_data_len, const uint16_t out_data_size, uint8_t* out_data);
+void protocol_decode(const struct __message_t* message, request_type_t* request_type, uint8_t* flags, uint16_t *out_data_len, const uint16_t out_data_size, uint8_t* out_data);
 
-request_type_t protocol_get_request_type(struct __message_t* message);
+request_type_t protocol_get_request_type(const struct __message_t* message);
 
-uint16_t protocol_get_payload_len(struct __message_t* message);
+uint16_t protocol_get_payload_len(const struct __message_t* message);
 
-uint8_t protocol_get_flags(struct __message_t* message);
+uint8_t protocol_get_flags(const struct __message_t* message);
+
+/**
+ * @brief Encode a authentication request.
+ * 
+ * @ref Used by client to send credentials to serverM
+ * @ref Used by serverM to encode the credentials to send to serverC
+ *
+ * @param credentials [in] Credentials to encode
+ * @param out_dgrm [out] Datagram to encode into
+ * @return err_t 
+ */
+err_t protocol_authentication_request_encode(const credentials_t* credentials, udp_dgram_t* out_dgrm);
+
+/**
+ * @brief Decode a authentication request
+ * 
+ * @ref Used by serverM to decode the credentials from client
+ * @ref Used by serverC to decode the credentials from serverM
+ *
+ * @param in_dgrm [in] Datagram to decode from
+ * @param credentials [out] Credentials to decode into
+ * @return err_t 
+ */
+err_t protocol_authentication_request_decode(const udp_dgram_t* in_dgrm, credentials_t* credentials);
+
+/**
+ * @brief Encode a credentials response
+ * 
+ * @param authentication_result [in] The authentication result
+ * @param out_dgrm [out] The encoded datagram
+ * @return err_t 
+ */
+err_t protocol_authentication_response_encode(const uint8_t authentication_result, udp_dgram_t* out_dgrm);
+
+/**
+ * @brief Decodes a credentials response
+ * 
+ * @param in_dgrm [in] The datagram to decode
+ * @param authentication_result [out] The authentication result
+ * @return err_t 
+ */
+err_t protocol_authentication_response_decode(const udp_dgram_t* in_dgrm, uint8_t* authentication_result);
+
 
 #endif // PROTOCOL_H

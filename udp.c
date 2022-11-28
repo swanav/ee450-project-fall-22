@@ -20,12 +20,14 @@ udp_ctx_t* udp_start(uint16_t port) {
         if (udp->sd < 0) {
             LOG_WARN("Failed to create socket on port %d. Error: %s.", port, strerror(errno));
             free(udp);
+            udp = NULL;
         } else {
             struct sockaddr_in server_addr;
             SERVER_ADDR_PORT(server_addr, port);
             if (bind(udp->sd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
                 LOG_WARN("Failed to bind socket to port %d. Error: %s.", port, strerror(errno));
                 free(udp);
+                udp = NULL;
             } else {
                 LOG_DBG("UDP Server started on port %d", port);
             }

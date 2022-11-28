@@ -78,6 +78,10 @@ int department_server_main(const char* subjectCode, const uint16_t port, const c
     db = fileio_department_server_db_create(db_file);
 
     udp_ctx_t* udp = udp_start(port);
+    if (!udp) {
+        LOG_ERR("SERVER_SUB_MESSAGE_ON_UDP_START_FAILED", subject_code);
+        return -1;
+    }
     LOG_INFO(SERVER_SUB_MESSAGE_ON_BOOTUP, subject_code, udp->port);
     udp->on_rx = udp_message_rx_handler;
 

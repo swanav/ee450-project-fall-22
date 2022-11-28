@@ -2,7 +2,7 @@
 #define _LOG_H_
 
 #ifndef ENABLE_DEBUG_LOGS
-#define ENABLE_DEBUG_LOGS 1
+#define ENABLE_DEBUG_LOGS 0
 #endif // ENABLE_DEBUG_LOGS
 
 #include <stdbool.h>

@@ -64,6 +64,11 @@ int main() {
     log_credentials(credentials_db);
 
     udp_ctx_t* udp = udp_start(SERVER_C_UDP_PORT_NUMBER);
+    if (!udp) {
+        LOG_ERR("SERVER_C_MESSAGE_ON_UDP_START_FAILURE");
+        return -1;
+    }
+
     LOG_INFO(SERVER_C_MESSAGE_ON_BOOTUP, udp->port);
     udp->on_rx = udp_message_rx_handler;
 

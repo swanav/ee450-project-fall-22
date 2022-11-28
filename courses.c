@@ -1,9 +1,10 @@
-#include "courses.h"
 #include <stdio.h>
 #include <string.h>
-#include "../utils.h"
-#include "../log.h"
-#include "../protocol.h"
+
+#include "courses.h"
+#include "log.h"
+#include "protocol.h"
+#include "utils.h"
 
 LOG_TAG(courses);
 
@@ -83,31 +84,6 @@ char* courses_category_string_from_enum(courses_lookup_category_t category) {
     }
 }
 
-err_t courses_details_request_encode(uint8_t * course_code, uint8_t course_code_len, struct __message_t* out_msg) {
-    if (course_code == NULL || out_msg == NULL) {
-        return ERR_INVALID_PARAMETERS;
-    }
-    protocol_encode(out_msg, REQUEST_TYPE_COURSES_DETAIL_LOOKUP, 0, course_code_len, course_code);
-    return ERR_OK;
-}
-
-err_t courses_details_request_decode(struct __message_t* in_msg, uint8_t* course_code, uint8_t course_code_size) {
-    if (in_msg == NULL || course_code == NULL) {
-        return ERR_INVALID_PARAMETERS;
-    }
-
-    request_type_t type = protocol_get_request_type(in_msg);
-    if (type != REQUEST_TYPE_COURSES_DETAIL_LOOKUP) {
-        return ERR_INVALID_PARAMETERS;
-    }
-
-
-    uint16_t olen = 0;
-    protocol_decode(in_msg, NULL, NULL, &olen, course_code_size, course_code);
-    course_code[olen] = '\0';
-
-    return ERR_OK;
-}
 
 // Get length of the words in a sentence
 int get_word_length(char* sentence) {
@@ -275,74 +251,4 @@ course_t* courses_lookup_multiple_response_decode(struct __message_t* in_msg) {
     }
 
     return courses;
-}
-
-err_t courses_details_response_decode(udp_dgram_t* req_dgram, course_t* course) {
-    if (req_dgram == NULL || course == NULL) {
-        return ERR_INVALID_PARAMETERS;
-    }
-
-    uint8_t buffer[128];
-    uint16_t buffer_len = 0;
-
-    protocol_decode(req_dgram, NULL, NULL, &buffer_len, sizeof(buffer), buffer);
-
-    uint8_t len = 0;
-    uint8_t offset = 0;
-
-    len = buffer[offset++];
-    memcpy(course->course_code, buffer + offset, len);
-    course->course_code[len] = '\0';
-    offset += len;
-
-    len = buffer[offset++];
-    memcpy(course->course_name, buffer + offset, len);
-    course->course_name[len] = '\0';
-    offset += len;
-
-    len = buffer[offset++];
-    memcpy(course->professor, buffer + offset, len);
-    course->professor[len] = '\0';
-    offset += len;
-
-    len = buffer[offset++];
-    memcpy(course->days, buffer + offset, len);
-    course->days[len] = '\0';
-    offset += len;
-
-    course->credits = buffer[++offset];
-
-    return ERR_OK;
-}
-
-err_t courses_details_response_encode(const course_t* course, struct __message_t* out_msg) {
-    if (course == NULL || out_msg == NULL) {
-        return ERR_INVALID_PARAMETERS;
-    }
-
-    uint8_t buffer[256];
-    size_t offset = 0;
-    
-    buffer[offset++] = strlen(course->course_code);
-    memcpy(buffer + offset, course->course_code, strlen(course->course_code));
-    offset += strlen(course->course_code);
-
-    buffer[offset++] = strlen(course->course_name);
-    memcpy(buffer + offset, course->course_name, strlen(course->course_name));
-    offset += strlen(course->course_name);
-
-    buffer[offset++] = strlen(course->professor);
-    memcpy(buffer + offset, course->professor, strlen(course->professor));
-    offset += strlen(course->professor);
-
-    buffer[offset++] = strlen(course->days);
-    memcpy(buffer + offset, course->days, strlen(course->days));
-    offset += strlen(course->days);
-
-    buffer[offset++] = 1;
-    buffer[offset++] = course->credits;
-
-    protocol_encode(out_msg, RESPONSE_TYPE_COURSES_DETAIL_LOOKUP, 0, offset, buffer);
-
-    return ERR_OK;
 }

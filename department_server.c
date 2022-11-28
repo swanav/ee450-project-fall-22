@@ -18,7 +18,7 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
     courses_lookup_category_t category = COURSES_LOOKUP_CATEGORY_INVALID;
 
     if (protocol_courses_lookup_single_request_decode(req_dgram, course_code, &size, &category) != ERR_OK) {
-        ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_REQ_INVALID);
+        protocol_courses_error_encode(ERR_REQ_INVALID, resp_dgram);
     } else {
         LOG_INFO(SERVER_SUB_MESSAGE_ON_LOOKUP_REQUEST_RECEIVED, subject_code, courses_category_string_from_enum(category), course_code);
         uint8_t info[128] = {0};
@@ -42,17 +42,17 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
 
 static void handle_course_detail_lookup_request(udp_dgram_t* req_dgram, udp_dgram_t* resp_dgram) {
     uint8_t course_code[10] = {0};
-
-    if (courses_details_request_decode(req_dgram, course_code, sizeof(course_code)) != ERR_OK) {
-        ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_REQ_INVALID);
+    uint8_t size = sizeof(course_code);
+    if (protocol_courses_lookup_detail_request_decode(req_dgram, course_code, &size) != ERR_OK) {
+        protocol_courses_error_encode(ERR_REQ_INVALID, resp_dgram);
     } else {
         LOG_INFO(SERVER_SUB_MESSAGE_ON_SUMMARY_REQUEST_RECEIVED, subject_code, course_code);
         course_t* course = courses_lookup(db, (const char*) course_code);
         if (!course) {
             LOG_WARN(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, course_code);
-            ENCODE_SIMPLE_ERROR_MESSAGE(resp_dgram, ERR_COURSES_NOT_FOUND);
+            protocol_courses_error_encode(ERR_COURSES_NOT_FOUND, resp_dgram);
         } else {
-            courses_details_response_encode(course, resp_dgram);
+            protocol_courses_lookup_detail_response_encode(course, resp_dgram);
         }
     }
 }
@@ -66,7 +66,7 @@ static void udp_message_rx_handler(udp_ctx_t* udp, udp_endpoint_t* src, udp_dgra
         handle_course_detail_lookup_request(req_dgram, &resp_dgram);
     } else {
         LOG_WARN(SERVER_SUB_MESSAGE_ON_REQUEST_INVALID, subject_code);
-        ENCODE_SIMPLE_ERROR_MESSAGE(&resp_dgram, 0x30);
+        protocol_courses_error_encode(ERR_REQ_INVALID, &resp_dgram);
     }
 
     udp_send(udp, src, &resp_dgram);

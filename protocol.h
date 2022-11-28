@@ -74,7 +74,7 @@ typedef struct __course_t {
 } course_t;
 
 // Create UDP or TCP packet based on given buffer
-void protocol_encode(struct __message_t* message, uint8_t type, uint8_t flags, uint16_t payload_len, uint8_t* payload);
+void protocol_encode(struct __message_t* message, const uint8_t type, const uint8_t flags, const uint16_t payload_len, const uint8_t* payload);
 
 // Recreate buffer from given UDP or TCP packet
 void protocol_decode(const struct __message_t* message, request_type_t* request_type, uint8_t* flags, uint16_t *out_data_len, const uint16_t out_data_size, uint8_t* out_data);
@@ -179,10 +179,42 @@ err_t protocol_courses_lookup_single_response_encode(const char* course_code, co
  */
 err_t protocol_courses_lookup_single_response_decode(const udp_dgram_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category, uint8_t* information, uint8_t* information_len);
 
-// err_t protocol_courses_lookup_detail_request_encode(, udp_dgram_t* out_dgrm);
-// err_t protocol_courses_lookup_detail_request_decode(const udp_dgram_t* in_dgrm,);
-// err_t protocol_courses_lookup_detail_response_encode(, udp_dgram_t* out_dgrm);
-// err_t protocol_courses_lookup_detail_response_decode(const udp_dgram_t* in_dgrm,);
+/**
+ * @brief Encode a course detail lookup request
+ * 
+ * @param course_code [in] The course to lookup information for
+ * @param course_code_len [in] The length of the course id
+ * @param out_dgrm [out] The encoded datagram
+ * 
+ * @return err_t 
+ */
+err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, const uint8_t course_code_len, udp_dgram_t* out_dgrm);
+
+/**
+ * @brief Decode a course detail lookup request
+ * 
+ * @param in_dgrm [in] The datagram to decode
+ * @param course_code [out] The course to lookup information for
+ * @param course_code_len [out] The length of the course id
+ * 
+ * @return err_t 
+ */
+err_t protocol_courses_lookup_detail_request_decode(const udp_dgram_t* in_dgrm, uint8_t* course_code, uint8_t* course_code_len);
+
+/**
+ * @brief Encode a course detail lookup response
+ * 
+ * @param course [in] The course to encode
+ * @param out_dgrm [out] The encoded datagram
+ * 
+ * @return err_t 
+ */
+err_t protocol_courses_lookup_detail_response_encode(const course_t* course, udp_dgram_t* out_dgrm);
+
+/**
+ * @brief Decode a course detail lookup response
+*/
+err_t protocol_courses_lookup_detail_response_decode(const udp_dgram_t* in_dgrm, course_t* course);
 
 // err_t protocol_courses_lookup_multiple_request_encode(, udp_dgram_t* out_dgrm);
 // err_t protocol_courses_lookup_multiple_request_decode(const udp_dgram_t* in_dgrm,);

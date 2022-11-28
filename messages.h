@@ -34,7 +34,7 @@
 #define SERVER_M_MESSAGE_ON_AUTH_RESULT_RECEIVED "The main server received the result of the authentication request from ServerC using UDP over port %d."
 #define SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED "The main server sent the authentication result to the client."
 #define SERVER_M_MESSAGE_ON_QUERY_RECEIVED "The main server received from %s to query course %s about %s using TCP over port %d."
-#define SERVER_M_MESSAGE_ON_QUERY_FORWARDED "The main server sent a request to server%s."
+#define SERVER_M_MESSAGE_ON_QUERY_FORWARDED "The main server sent a request to server%.*s."
 #define SERVER_M_MESSAGE_ON_RESULT_RECEIVED "The main server received the response from server%s using UDP over port %d."
 #define SERVER_M_MESSAGE_ON_RESULT_FORWARDED "The main server sent the query information to the client."
 

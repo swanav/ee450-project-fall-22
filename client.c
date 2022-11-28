@@ -18,7 +18,7 @@
 #include "utils.h"
 #include "messages.h"
 #include "constants.h"
-#include "data/courses.h"
+#include "courses.h"
 
 LOG_TAG(client);
 
@@ -160,11 +160,12 @@ static void send_request(client_context_t* ctx, int courses_count, uint8_t* cour
 
 static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_DBG("Received course lookup info.");
+    LOG_BUFFER(sgmnt->data, sgmnt->data_len);
 
     char course_code[10] = {0};
     uint8_t course_code_len = sizeof(course_code);
     courses_lookup_category_t category = COURSES_LOOKUP_CATEGORY_INVALID;
-    char information[20] = {0};
+    char information[120] = {0};
     uint8_t information_len = sizeof(information);
     if (protocol_courses_lookup_single_response_decode(sgmnt, course_code, &course_code_len, &category, (uint8_t*) information, &information_len) != ERR_OK) {
         LOG_ERR("Failed to decode course lookup info.");
@@ -274,7 +275,6 @@ static void* network_thread_task(void* params) {
     tcp_client_disconnect(ctx->client);
     return NULL;
 }
-
 
 int main() {
     client_context_t ctx = {0};

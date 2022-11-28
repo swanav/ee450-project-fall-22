@@ -21,12 +21,6 @@ struct __message_t {
     size_t data_len;
 };
 
-#define ENCODE_SIMPLE_ERROR_MESSAGE(message, err_code) \
-do { \
-    (message)->data_len = 1; \
-    (message)->data[0] = err_code; \
-} while(0)
-
 /* ------------------------------------------ TCP --------------------------------------------- */
 
 typedef struct __message_t tcp_sgmnt_t;

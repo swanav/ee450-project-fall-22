@@ -14,7 +14,7 @@
 
 #include "constants.h"
 #include "credentials.h"
-#include "data/courses.h"
+#include "courses.h"
 #include "log.h"
 #include "protocol.h"
 #include "messages.h"
@@ -66,42 +66,40 @@ static void on_auth_response_received(udp_dgram_t* req_dgram) {
 
 /* ============================================================================================================ */
 
-static void on_course_lookup_info_response_received(udp_dgram_t* req_dgram) {
-    tcp_server_send(tcp, tcp->endpoints, req_dgram);
-    LOG_INFO(SERVER_M_MESSAGE_ON_RESULT_FORWARDED);
+static udp_endpoint_t* get_department_server_endpoint(const char* course_code) {
+    if (strncasecmp((char*) course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
+        return &serverEE;
+    } else if (strncasecmp((char*) course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
+        return &serverCS;
+    } else {
+        return NULL;
+    }
 }
 
-static void request_course_lookup_info(char* course_code, uint8_t course_code_len, courses_lookup_category_t category) {
+static void send_request_to_department_server(udp_dgram_t* dgram, const char* course_code, uint8_t course_code_len) {
+    udp_endpoint_t* endpoint = get_department_server_endpoint((char*) course_code);
+        if (endpoint) {
+            udp_send(udp, endpoint, dgram);
+            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, 2, course_code);
+        } else {
+            LOG_WARN("Invalid course code: %.*s", course_code_len, course_code);
+            sem_post(&semaphore);
+        }
+}
+
+static void request_course_category_information(char* course_code, uint8_t course_code_len, courses_lookup_category_t category) {
     if (udp) {
         udp_dgram_t dgram = {0};
         protocol_courses_lookup_single_request_encode(course_code, course_code_len, category, &dgram);
-        if (strncasecmp(course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
-            udp_send(udp, &serverEE, &dgram);
-            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_EE);
-        } else if (strncasecmp(course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
-            udp_send(udp, &serverCS, &dgram);
-            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_CS);
-        } else {
-            LOG_WARN("Invalid course code: %s", course_code);
-            sem_post(&semaphore);
-        }
+        send_request_to_department_server(&dgram, course_code, course_code_len);
     }
 }
 
 static void request_course_details(uint8_t* course_code, uint8_t course_code_len) {
     if (udp) {
         udp_dgram_t dgram = {0};
-        courses_details_request_encode(course_code, course_code_len, &dgram);
-        if (strncasecmp((char*) course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
-            udp_send(udp, &serverEE, &dgram);
-            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_EE);
-        } else if (strncasecmp((char*) course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
-            udp_send(udp, &serverCS, &dgram);
-            LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_CS);
-        } else {
-            LOG_WARN("Invalid course code: %.*s", course_code_len, course_code);
-            sem_post(&semaphore);
-        }
+        protocol_courses_lookup_detail_request_encode(course_code, course_code_len, &dgram);
+        send_request_to_department_server(&dgram, (const char*) course_code, course_code_len);
     }
 }
 
@@ -114,7 +112,7 @@ static void on_course_lookup_info_request_received(tcp_server_t* tcp, tcp_endpoi
 
     if (protocol_courses_lookup_single_request_decode(req_sgmnt, course_code, &size, &category) == ERR_OK) {
         LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "\"user\"", course_code, courses_category_string_from_enum(category), ntohs(src->addr.sin_port));
-        request_course_lookup_info(course_code, size, category);
+        request_course_category_information(course_code, size, category);
     } else {
         LOG_ERR("Failed to decode course lookup info request");
     }
@@ -189,18 +187,24 @@ course_t* insert_to_end_of_linked_list(course_t* list, course_t* item) {
     return list;
 }
 
+
+static void on_single_course_lookup_info_response_received(udp_dgram_t* req_dgram) {
+    tcp_server_send(tcp, tcp->endpoints, req_dgram);
+    LOG_INFO(SERVER_M_MESSAGE_ON_RESULT_FORWARDED);
+}
+
 static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
     uint8_t response_type = protocol_get_request_type(req_dgram);
     if (response_type == RESPONSE_TYPE_AUTH) {
         LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_RESULT_RECEIVED, ntohs(source->addr.sin_port));
         on_auth_response_received(req_dgram);
     } else if (response_type == RESPONSE_TYPE_COURSES_SINGLE_LOOKUP) {
-        LOG_INFO("Received course lookup info response.");
-        on_course_lookup_info_response_received(req_dgram);
+        LOG_INFO("Received course lookup info response for a single course.");
+        on_single_course_lookup_info_response_received(req_dgram);
     } else if (response_type == RESPONSE_TYPE_COURSES_DETAIL_LOOKUP) {
         LOG_INFO("Received course detail response.");
         course_t* course = calloc(1, sizeof(course_t));
-        if (courses_details_response_decode(req_dgram, course) == ERR_OK) {
+        if (protocol_courses_lookup_detail_response_decode(req_dgram, course) == ERR_OK) {
             multi_course_response = insert_to_end_of_linked_list(multi_course_response, course);
         }
         sem_post(&semaphore);

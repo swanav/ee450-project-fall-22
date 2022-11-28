@@ -1,43 +1,33 @@
 OUTPUT_DIR := out
 
 all: client serverC serverCS serverEE serverM
-	
+
 client: client.c out_dir
 	gcc -g -Wall \
 		-o $(OUTPUT_DIR)/client \
-			client.c protocol.c tcp.c \
-			data/courses.c \
-			log.c utils.c \
+			client.c courses.c log.c protocol.c tcp.c utils.c \
 		-lpthread
 
-serverM: serverM.c data/** out_dir
+serverM: serverM.c out_dir
 	gcc -g -Wall -Idata \
 		-o $(OUTPUT_DIR)/serverM  \
-			serverM.c protocol.c tcp.c udp.c \
-			data/courses.c credentials.c \
-			log.c utils.c \
+			serverM.c courses.c credentials.c log.c protocol.c tcp.c udp.c utils.c \
 		-lpthread
 
 serverC: serverC.c  out_dir
 	gcc -g -Wall \
 		-o $(OUTPUT_DIR)/serverC \
-			serverC.c fileio.c protocol.c udp.c \
-			credentials.c \
-			log.c utils.c
+			serverC.c credentials.c fileio.c log.c protocol.c udp.c utils.c
 
-serverCS: serverCS.c data/** out_dir
+serverCS: serverCS.c out_dir
 	gcc -g -Wall -Idata \
 		-o $(OUTPUT_DIR)/serverCS \
-			serverCS.c fileio.c protocol.c department_server.c udp.c \
-			data/courses.c \
-			log.c utils.c
+			serverCS.c courses.c department_server.c fileio.c log.c protocol.c udp.c utils.c
 
-serverEE: serverEE.c data/** out_dir
+serverEE: serverEE.c out_dir
 	gcc -g -Wall -Idata \
 		-o $(OUTPUT_DIR)/serverEE \
-			serverEE.c fileio.c protocol.c department_server.c udp.c \
-			data/courses.c \
-			log.c utils.c
+			serverEE.c courses.c department_server.c fileio.c log.c protocol.c udp.c utils.c
 
 out_dir:
 	mkdir -p $(OUTPUT_DIR)

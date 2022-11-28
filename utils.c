@@ -36,3 +36,12 @@ int utils_get_word_count(char* str) {
     }
     return wc + 1;
 }
+
+int utils_get_word_length(char* sentence) {
+    int length = 0;
+    while (*sentence != ' ' && *sentence != '\0') {
+        length++;
+        sentence++;
+    }
+    return length;
+}

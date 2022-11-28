@@ -1,6 +1,6 @@
 OUTPUT_DIR := out
 
-all: client serverC serverCS serverEE serverM
+all: client serverM serverC serverCS serverEE
 
 client: client.c out_dir
 	gcc -g -Wall \
@@ -9,7 +9,7 @@ client: client.c out_dir
 		-lpthread
 
 serverM: serverM.c out_dir
-	gcc -g -Wall -Idata \
+	gcc -g -Wall \
 		-o $(OUTPUT_DIR)/serverM  \
 			serverM.c courses.c credentials.c log.c protocol.c tcp.c udp.c utils.c \
 		-lpthread
@@ -20,12 +20,12 @@ serverC: serverC.c  out_dir
 			serverC.c credentials.c fileio.c log.c protocol.c udp.c utils.c
 
 serverCS: serverCS.c out_dir
-	gcc -g -Wall -Idata \
+	gcc -g -Wall \
 		-o $(OUTPUT_DIR)/serverCS \
 			serverCS.c courses.c department_server.c fileio.c log.c protocol.c udp.c utils.c
 
 serverEE: serverEE.c out_dir
-	gcc -g -Wall -Idata \
+	gcc -g -Wall \
 		-o $(OUTPUT_DIR)/serverEE \
 			serverEE.c courses.c department_server.c fileio.c log.c protocol.c udp.c utils.c
 

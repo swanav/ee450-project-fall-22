@@ -46,4 +46,13 @@ char* utils_string_trim(char* s);
  */
 int utils_get_word_count(char* str);
 
+/**
+ * @brief Count characters in the word
+ *
+ * @param str Pointer to word
+ * 
+ * @return Number of characters in the word
+ */
+int utils_get_word_length(char* str);
+
 #endif // __UTILS_H__

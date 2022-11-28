@@ -38,6 +38,7 @@ typedef void (*tcp_message_rx_cb_t) (tcp_server_t* tcp, tcp_endpoint_t* dest, tc
 
 struct __tcp_client_t {
     int sd;
+    int port;
     tcp_endpoint_t* server;
     tcp_receive_handler_t on_receive;
     tcp_disconnect_handler_t on_disconnect;

@@ -216,10 +216,59 @@ err_t protocol_courses_lookup_detail_response_encode(const course_t* course, udp
 */
 err_t protocol_courses_lookup_detail_response_decode(const udp_dgram_t* in_dgrm, course_t* course);
 
-// err_t protocol_courses_lookup_multiple_request_encode(, udp_dgram_t* out_dgrm);
-// err_t protocol_courses_lookup_multiple_request_decode(const udp_dgram_t* in_dgrm,);
-// err_t protocol_courses_lookup_multiple_response_encode(, udp_dgram_t* out_dgrm);
-// err_t protocol_courses_lookup_multiple_response_decode(const udp_dgram_t* in_dgrm,);
+/**
+ * @brief Encode a course list lookup request
+ * 
+ * @param course_count [in] The number of courses to lookup
+ * @param course_codes_buffer [in] The buffer with courses to lookup
+ * @param course_codes_buffer_len [in] The length of the course codes buffer
+ * @param out_dgrm [out] The encoded datagram
+ * 
+ * @return err_t 
+ */
+err_t protocol_courses_lookup_multiple_request_encode(const uint8_t course_count, const uint8_t* course_codes_buffer, const uint8_t course_codes_buffer_len, tcp_sgmnt_t* out_sgmnt);
+
+typedef void (*single_course_code_handler_t)(const uint8_t idx, const char* course_code, const uint8_t course_code_len);
+
+/**
+ * @brief Decode a course list lookup request
+ * 
+ * @param in_dgrm [in] The datagram to decode
+ * @param course_count [out] The number of courses to lookup
+ * @param handler [callback] Callback function called for each course code
+ * 
+ * @return err_t 
+ */
+err_t protocol_courses_lookup_multiple_request_decode(const udp_dgram_t* in_dgrm, uint8_t* course_count, single_course_code_handler_t handler);
+
+/**
+ * @brief Encode a course list lookup response
+ * 
+ * @param courses [in] The courses to encode
+ * @param out_dgrm [out] The encoded datagram
+ * 
+ * @return err_t 
+ */
+err_t protocol_courses_lookup_multiple_response_encode(const course_t* courses, udp_dgram_t* out_dgrm);
+
+/**
+ * @brief Decode a course list lookup response
+ * 
+ * @param in_dgrm [in] The datagram to decode
+ * @param courses [out] The courses linked list
+ * 
+ * @note The caller needs to call protocol_courses_lookup_multiple_response_decode_dealloc() to avoid memory leaks
+ * 
+ * @return err_t 
+ */
+err_t protocol_courses_lookup_multiple_response_decode(const udp_dgram_t* in_dgrm, course_t** courses);
+
+/**
+ * @brief Deallocate the memory used by a course list lookup response
+ * 
+ * @param course [in] The courses linked list
+ */
+void protocol_courses_lookup_multiple_response_decode_dealloc(course_t* course);
 
 /**
  * @brief Encode a course lookup error

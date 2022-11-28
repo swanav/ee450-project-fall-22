@@ -9,6 +9,7 @@
 #define CLIENT_MESSAGE_ON_AUTH_RESULT_SUCCESS "Authentication is successful."
 #define CLIENT_MESSAGE_ON_AUTH_RESULT_FAILURE "Authentication failed."
 #define CLIENT_MESSAGE_ON_NETWORK_REQUEST_TIMEOUT "Request timed out."
+#define CLIENT_MESSAGE_ON_RESPONSE "The client received the response from Main server using TCP over port %d."
 
 
 #define SERVER_C_MESSAGE_ON_BOOTUP "The serverC is up and running using UDP on port %d."

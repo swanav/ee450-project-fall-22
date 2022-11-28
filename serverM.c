@@ -95,7 +95,7 @@ static void request_course_category_information(char* course_code, uint8_t cours
     }
 }
 
-static void request_course_details(uint8_t* course_code, uint8_t course_code_len) {
+static void request_course_details(const uint8_t* course_code, const uint8_t course_code_len) {
     if (udp) {
         udp_dgram_t dgram = {0};
         protocol_courses_lookup_detail_request_encode(course_code, course_code_len, &dgram);
@@ -126,39 +126,24 @@ static void drop_linked_list(course_t* ptr) {
     }
 }
 
+void single_course_code_handler(const uint8_t idx, const char* course_code, const uint8_t course_code_len) {
+    LOG_DBG("%d) Requesting course details for %.*s", idx, course_code_len, course_code);
+    request_course_details((const uint8_t*) course_code, course_code_len);
+    sem_wait(&semaphore);
+}
+
 void* multi_request_thread(void* params) {
     LOG_DBG("Starting multi request thread");
     tcp_sgmnt_t* req_sgmnt = (tcp_sgmnt_t*) params;
 
     uint8_t courses_length = 0;
-    uint8_t buffer[128] = {0};
-    courses_lookup_multiple_request_decode(req_sgmnt, &courses_length, buffer, sizeof(buffer));
-    LOG_DBG("Received multi request for %d courses", courses_length);
-
-    uint8_t offset = 0;
-
-    uint8_t course_code[10] = {0};
-    uint8_t course_code_len = 0;
-
     multi_course_response = NULL;
-
-    for (int i = 0; i < courses_length; i++) {
-        course_code_len = buffer[offset++];
-        memcpy(course_code, buffer + offset, course_code_len);
-        offset += course_code_len;
-        LOG_DBG("Requesting course details for %.*s", course_code_len, course_code);
-        request_course_details(course_code, course_code_len);
-        sem_wait(&semaphore);
-    }
-
-    LOG_DBG("Multi request thread finished");
-
+    protocol_courses_lookup_multiple_request_decode(req_sgmnt, &courses_length, single_course_code_handler);
+    LOG_DBG("Received multi request for %d courses", courses_length);
     log_courses(multi_course_response);
 
     tcp_sgmnt_t sgmnt = {0};
-
     courses_lookup_multiple_response_encode(&sgmnt, multi_course_response);
-
     tcp_server_send(tcp, tcp->endpoints, &sgmnt);
 
     course_t* ptr = multi_course_response;

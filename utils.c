@@ -1,43 +1,38 @@
 #include <ctype.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "utils.h"
 
-#include "log.h"
-#include "messages.h"
-
-LOG_TAG(utils);
-
-char* string_ltrim(char* s) {
+// Implemented after referring from stackoverflow.com/questions/122616
+char* utils_string_ltrim(char* s) {
     if(!s) return NULL;
     while(isspace(*s)) s++;
     return s;
 }
 
-char* string_rtrim(char* s) {
+// Implemented after referring from stackoverflow.com/questions/122616
+char* utils_string_rtrim(char* s) {
     if(!s) return NULL;
     char* back = s + strlen(s);
-    // Peek at the previous character.
-    // Go back if previous character is also a space
     while(back != s && isspace(back[-1])) back--;
     *back = '\0';
     return s;
 }
 
-char* string_trim(char* s) {
+char* utils_string_trim(char* s) {
     if(!s) return NULL;
-    return string_rtrim(string_ltrim(s)); 
+    return utils_string_rtrim(utils_string_ltrim(s)); 
 }
 
 int utils_get_word_count(char* str) {
     int wc = 0;
-    while (*str) {
-        if (*str == ' ' || *str == '\t') {
+    char* p = utils_string_trim(str);
+    while (*p) {
+        if (*p == ' ' || *p == '\t') {
             wc++;
         }
-        str++;
+        p++;
     }
     return wc + 1;
 }

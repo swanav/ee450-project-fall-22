@@ -86,4 +86,11 @@ void log_credential(const void* credentials);
  */
 void log_credentials(const void* head);
 
+/**
+ * @brief Print the output of the course multiple lookup
+ *
+ * @param courses The courses to print
+*/
+void log_course_multi_lookup_result(const void* courses);
+
 #endif // _LOG_H_

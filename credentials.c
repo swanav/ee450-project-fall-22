@@ -59,7 +59,7 @@ err_t credentials_validate(const credentials_t* credentials_db, const credential
     while (credentials_db != NULL) {
         if (strcmp((const char*) credentials_db->username, (const char*) credential->username) == 0) {
             if(strcmp((const char*) credentials_db->password, (const char*) credential->password) == 0) {
-                return ERR_CREDENTIALS_OK;
+                return ERR_OK;
             } else {
                 return ERR_CREDENTIALS_PASSWORD_MISMATCH;
             }

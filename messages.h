@@ -14,6 +14,7 @@
 #define SERVER_C_MESSAGE_ON_BOOTUP "The serverC is up and running using UDP on port %d."
 #define SERVER_C_MESSAGE_ON_BOOTUP_FAILURE "The serverC failed to start using UDP. Reason: %s."
 #define SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED "The serverC received an authentication request from the Main Server."
+#define SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED_FOR_USER "The serverC received an authentication request for user %.*s"
 #define SERVER_C_MESSAGE_ON_AUTH_RESPONSE_SENT "The serverC finished sending the response to the Main Server."
 #define SERVER_C_MESSAGE_ON_INVALID_REQUEST_RECEIVED "The serverC received an invalid request from the Main Server."
 

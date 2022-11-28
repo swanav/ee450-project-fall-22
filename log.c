@@ -5,6 +5,7 @@
 
 #include "log.h"
 #include "protocol.h"
+#include "utils.h"
 
 #define LOG_CYAN_STR        "\033[0;36m"
 #define LOG_CYAN_BOLD_STR   "\033[1;36m"
@@ -128,4 +129,42 @@ void log_credentials(const void* head) {
 		ptr = ptr->next;
 	}
 #endif // ENABLE_DEBUG_LOGS
+}
+
+struct paddings_t {
+    int course_code;
+    int credits;
+    int professor;
+    int days;
+    int course_name;
+};
+
+static void get_paddings(course_t* courses, struct paddings_t* paddings) {
+    bzero(paddings, sizeof(struct paddings_t));
+    paddings->course_code = strlen("Course Code");
+    paddings->credits = strlen("Credits");
+    paddings->professor = strlen("Professor");
+    paddings->days = strlen("Days");
+    paddings->course_name = strlen("Course Name");
+    while (courses) {
+        paddings->course_code = max(paddings->course_code, strlen(courses->course_code));
+        paddings->credits = max(paddings->credits, 1);
+        paddings->professor = max(paddings->professor, strlen(courses->professor));
+        paddings->days = max(paddings->days, strlen(courses->days));
+        paddings->course_name = max(paddings->course_name, strlen(courses->course_name));
+        courses = courses->next;
+    }
+}
+
+void log_course_multi_lookup_result(const void* courses) {
+	static const char* TAG = "client";
+	course_t* ptr = (course_t*)courses;
+    struct paddings_t pad = {0};
+    get_paddings(ptr, &pad);
+
+    LOG_WARN("%*s: %*s | %*s | %*s | %*s", -1 * pad.course_code, "Course Code", -1 * pad.credits, "Credits", -1 * pad.professor, "Professor", -1 * pad.days, "Days", -1 * pad.course_name, "Course Name");
+    while(ptr != NULL) {
+        LOG_INFO("%*s: %*d | %*s | %*s | %*s", -1 * pad.course_code, ptr->course_code, -1 * pad.credits, ptr->credits, -1 * pad.professor, ptr->professor, -1 * pad.days, ptr->days, -1 * pad.course_name, ptr->course_name);
+        ptr = ptr->next;
+    }
 }

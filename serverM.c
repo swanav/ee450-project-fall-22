@@ -32,6 +32,7 @@ static udp_endpoint_t serverEE;
 
 course_t* multi_course_response = NULL;
 
+static pthread_t thread;
 static sem_t semaphore;
 
 /* ======================================== Authentication ============================================= */
@@ -70,18 +71,18 @@ static void on_course_lookup_info_response_received(udp_dgram_t* req_dgram) {
     LOG_INFO(SERVER_M_MESSAGE_ON_RESULT_FORWARDED);
 }
 
-static void request_course_lookup_info(courses_lookup_params_t* params) {
+static void request_course_lookup_info(char* course_code, uint8_t course_code_len, courses_lookup_category_t category) {
     if (udp) {
         udp_dgram_t dgram = {0};
-        courses_lookup_info_request_encode(params, &dgram);
-        if (strncasecmp(params->course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
+        protocol_courses_lookup_single_request_encode(course_code, course_code_len, category, &dgram);
+        if (strncasecmp(course_code, DEPARTMENT_PREFIX_EE, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverEE, &dgram);
             LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_EE);
-        } else if (strncasecmp(params->course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
+        } else if (strncasecmp(course_code, DEPARTMENT_PREFIX_CS, DEPARTMENT_PREFIX_LEN) == 0) {
             udp_send(udp, &serverCS, &dgram);
             LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_FORWARDED, DEPARTMENT_PREFIX_CS);
         } else {
-            LOG_WARN("Invalid course code: %s", params->course_code);
+            LOG_WARN("Invalid course code: %s", course_code);
             sem_post(&semaphore);
         }
     }
@@ -106,13 +107,18 @@ static void request_course_details(uint8_t* course_code, uint8_t course_code_len
 
 static void on_course_lookup_info_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t* req_sgmnt) {
     LOG_INFO("Received course lookup info request from " IP_ADDR_FORMAT, IP_ADDR(src));
-    courses_lookup_params_t params = {0};
-    courses_lookup_info_request_decode(req_sgmnt, &params);
-    LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "CS", params.course_code, courses_category_string_from_enum(params.category), ntohs(src->addr.sin_port));
-    request_course_lookup_info(&params);
-}
 
-static pthread_t thread;
+    char course_code[10] = {0};
+    uint8_t size = sizeof(course_code);
+    courses_lookup_category_t category = COURSES_LOOKUP_CATEGORY_INVALID;
+
+    if (protocol_courses_lookup_single_request_decode(req_sgmnt, course_code, &size, &category) == ERR_OK) {
+        LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "\"user\"", course_code, courses_category_string_from_enum(category), ntohs(src->addr.sin_port));
+        request_course_lookup_info(course_code, size, category);
+    } else {
+        LOG_ERR("Failed to decode course lookup info request");
+    }
+}
 
 static void drop_linked_list(course_t* ptr) {
     while (ptr) {
@@ -188,13 +194,13 @@ static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t
     if (response_type == RESPONSE_TYPE_AUTH) {
         LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_RESULT_RECEIVED, ntohs(source->addr.sin_port));
         on_auth_response_received(req_dgram);
-    } else if (response_type == RESPONSE_TYPE_COURSES_LOOKUP_INFO) {
+    } else if (response_type == RESPONSE_TYPE_COURSES_SINGLE_LOOKUP) {
         LOG_INFO("Received course lookup info response.");
         on_course_lookup_info_response_received(req_dgram);
     } else if (response_type == RESPONSE_TYPE_COURSES_DETAIL_LOOKUP) {
         LOG_INFO("Received course detail response.");
         course_t* course = calloc(1, sizeof(course_t));
-        if (courses_details_response_decode(req_dgram, course) == ERR_COURSES_OK) {
+        if (courses_details_response_decode(req_dgram, course) == ERR_OK) {
             multi_course_response = insert_to_end_of_linked_list(multi_course_response, course);
         }
         sem_post(&semaphore);
@@ -210,7 +216,7 @@ static void on_tcp_server_rx(tcp_server_t* tcp, tcp_endpoint_t* src, tcp_sgmnt_t
         case REQUEST_TYPE_AUTH:
             on_auth_request_received(tcp, src, req_sgmnt);
             break;
-        case REQUEST_TYPE_COURSES_LOOKUP_INFO:
+        case REQUEST_TYPE_COURSES_SINGLE_LOOKUP:
             on_course_lookup_info_request_received(tcp, src, req_sgmnt);
             break;
         case REQUEST_TYPE_COURSES_MULTI_LOOKUP:

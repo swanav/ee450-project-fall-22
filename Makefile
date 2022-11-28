@@ -22,7 +22,7 @@ serverC: serverC.c  out_dir
 	gcc -g -Wall \
 		-o $(OUTPUT_DIR)/serverC \
 			serverC.c fileio.c protocol.c udp.c \
-			data/courses.c credentials.c \
+			credentials.c \
 			log.c utils.c
 
 serverCS: serverCS.c data/** out_dir

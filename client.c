@@ -128,7 +128,7 @@ static int collect_course_codes(uint8_t* course_code, uint8_t course_code_buffer
 #else
     fgets((char*) course_code, course_code_buffer_size, stdin);
 #endif // CLIENT_TEST
-    return utils_get_word_count(string_trim((char*) course_code));
+    return utils_get_word_count((char*) course_code);
 }
 
 static int new_request_prompt(uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {
@@ -144,17 +144,15 @@ static int new_request_prompt(uint8_t* course_code_buffer, uint8_t course_code_b
 static void send_request(client_context_t* ctx, int courses_count, uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {
     tcp_sgmnt_t sgmnt = {0};
     if (courses_count == 1) {
-        courses_lookup_params_t params = {0};
-        memcpy(params.course_code, course_code_buffer, strlen((const char*) course_code_buffer));
-        params.category = courses_lookup_category_from_string(string_trim((char*) category_buffer));
-        if (params.category == COURSES_LOOKUP_CATEGORY_INVALID) {
+        courses_lookup_category_t category = courses_lookup_category_from_string(utils_string_trim((char*) category_buffer));
+        if (category == COURSES_LOOKUP_CATEGORY_INVALID) {
             LOG_ERR("Invalid category.");
             sem_post(&ctx->semaphore);
             return;
         }
-        courses_lookup_info_request_encode(&params, &sgmnt);
+        protocol_courses_lookup_single_request_encode((const char*) course_code_buffer, strlen((const char*) course_code_buffer), category, &sgmnt);
     } else if (courses_count > 1) {
-        LOG_DBG("Requesting course details for requested course codes. (%s)", course_code_buffer);
+        LOG_DBG("Requesting course details for multiple course codes. (%s)", course_code_buffer);
         courses_lookup_multiple_request_encode(&sgmnt, courses_count, course_code_buffer, course_code_buffer_size);
     }
     tcp_client_send(ctx->client, &sgmnt);
@@ -162,58 +160,25 @@ static void send_request(client_context_t* ctx, int courses_count, uint8_t* cour
 
 static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_DBG("Received course lookup info.");
-    courses_lookup_params_t params = {0};
-    uint8_t info[64];
-    uint8_t info_len = 0;
-    uint8_t flags = protocol_get_flags(sgmnt);
-    if (COURSE_LOOKUP_MASK_INVALID(flags)) {
+
+    char course_code[10] = {0};
+    uint8_t course_code_len = sizeof(course_code);
+    courses_lookup_category_t category = COURSES_LOOKUP_CATEGORY_INVALID;
+    char information[20] = {0};
+    uint8_t information_len = sizeof(information);
+    if (protocol_courses_lookup_single_response_decode(sgmnt, course_code, &course_code_len, &category, (uint8_t*) information, &information_len) != ERR_OK) {
+        LOG_ERR("Failed to decode course lookup info.");
+    } else if (category == COURSES_LOOKUP_CATEGORY_INVALID) {
         LOG_ERR("Invalid query.");
-    } else if (courses_lookup_info_response_decode(sgmnt, &params, info, sizeof(info), &info_len) == ERR_COURSES_OK) {
-        LOG_INFO("The %s of %s is %.*s", courses_category_string_from_enum(params.category), params.course_code, info_len, info);   
-    }
-}
-
-struct paddings_t {
-    int course_code;
-    int credits;
-    int professor;
-    int days;
-    int course_name;
-};
-
-static void get_paddings(course_t* courses, struct paddings_t* paddings) {
-    bzero(paddings, sizeof(struct paddings_t));
-    paddings->course_code = strlen("Course Code");
-    paddings->credits = strlen("Credits");
-    paddings->professor = strlen("Professor");
-    paddings->days = strlen("Days");
-    paddings->course_name = strlen("Course Name");
-    while (courses) {
-        paddings->course_code = max(paddings->course_code, strlen(courses->course_code));
-        paddings->credits = max(paddings->credits, 1);
-        paddings->professor = max(paddings->professor, strlen(courses->professor));
-        paddings->days = max(paddings->days, strlen(courses->days));
-        paddings->course_name = max(paddings->course_name, strlen(courses->course_name));
-        courses = courses->next;
-    }
-}
-
-static void print_course_multi_lookup_result(course_t* courses) {
-
-    struct paddings_t paddings = {0};
-    get_paddings(courses, &paddings);
-
-    LOG_WARN("%*s: %*s | %*s | %*s | %*s", -1 * paddings.course_code, "Course Code", -1 * paddings.credits, "Credits", -1 * paddings.professor, "Professor", -1 * paddings.days, "Days", -1 * paddings.course_name, "Course Name");
-    while(courses != NULL) {
-        LOG_INFO("%*s: %*d | %*s | %*s | %*s", -1 * paddings.course_code, courses->course_code, -1 * paddings.credits, courses->credits, -1 * paddings.professor, courses->professor, -1 * paddings.days, courses->days, -1 * paddings.course_name, courses->course_name);
-        courses = courses->next;
+    } else {
+        LOG_INFO("The %s of %s is %.*s", courses_category_string_from_enum(category), course_code, information_len, information);
     }
 }
 
 static void on_course_multi_lookup(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     LOG_DBG("Received course multi lookup info.");
     course_t* courses = courses_lookup_multiple_response_decode(sgmnt);
-    print_course_multi_lookup_result(courses);
+    log_course_multi_lookup_result(courses);
     // courses_free(courses);
 }
 
@@ -277,7 +242,7 @@ static void on_receive(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
         case RESPONSE_TYPE_AUTH:
             on_auth_result(ctx, sgmnt);
             break;
-        case RESPONSE_TYPE_COURSES_LOOKUP_INFO:
+        case RESPONSE_TYPE_COURSES_SINGLE_LOOKUP:
             on_course_lookup_info(ctx, sgmnt);
             break;
         case RESPONSE_TYPE_COURSES_MULTI_LOOKUP:

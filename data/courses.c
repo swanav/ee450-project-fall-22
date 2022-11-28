@@ -1,5 +1,6 @@
 #include "courses.h"
 #include <stdio.h>
+#include <string.h>
 #include "../utils.h"
 #include "../log.h"
 #include "../protocol.h"
@@ -35,7 +36,7 @@ courses_lookup_category_t courses_lookup_category_from_string(const char* catego
 
 err_t courses_lookup_info(const course_t* course, courses_lookup_category_t category, uint8_t* info_buf, size_t info_buf_size, size_t* info_len) {
     if (course == NULL || info_buf == NULL || info_len == NULL || category >= COURSES_LOOKUP_CATEGORY_INVALID) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
 
     switch (category) {
@@ -60,62 +61,44 @@ err_t courses_lookup_info(const course_t* course, courses_lookup_category_t cate
             *info_len = strlen(course->course_name);
             break;
         default:
-            return ERR_COURSES_INVALID_PARAMETERS;
+            return ERR_INVALID_PARAMETERS;
     }
-    return ERR_COURSES_OK;
+    return ERR_OK;
 }
 
-uint8_t courses_flags_from_category(courses_lookup_category_t category) {
+char* courses_category_string_from_enum(courses_lookup_category_t category) {
     switch (category) {
         case COURSES_LOOKUP_CATEGORY_COURSE_CODE:
-            return COURSE_LOOKUP_FLAGS_COURSE_CODE;
+            return "Course Code";
         case COURSES_LOOKUP_CATEGORY_CREDITS:
-            return COURSE_LOOKUP_FLAGS_CREDITS;
+            return "Credits";
         case COURSES_LOOKUP_CATEGORY_PROFESSOR:
-            return COURSE_LOOKUP_FLAGS_PROFESSOR;
+            return "Professor";
         case COURSES_LOOKUP_CATEGORY_DAYS:
-            return COURSE_LOOKUP_FLAGS_DAYS;
+            return "Days";
         case COURSES_LOOKUP_CATEGORY_COURSE_NAME:
-            return COURSE_LOOKUP_FLAGS_COURSE_NAME;
+            return "Course Name";
         default:
-            return 0;
+            return "Invalid";
     }
 }
-
-courses_lookup_category_t courses_category_from_flags(uint8_t category) {
-    switch (category) {
-        case COURSE_LOOKUP_FLAGS_COURSE_CODE:
-            return COURSES_LOOKUP_CATEGORY_COURSE_CODE;
-        case COURSE_LOOKUP_FLAGS_CREDITS:
-            return COURSES_LOOKUP_CATEGORY_CREDITS;
-        case COURSE_LOOKUP_FLAGS_PROFESSOR:
-            return COURSES_LOOKUP_CATEGORY_PROFESSOR;
-        case COURSE_LOOKUP_FLAGS_DAYS:
-            return COURSES_LOOKUP_CATEGORY_DAYS;
-        case COURSE_LOOKUP_FLAGS_COURSE_NAME:
-            return COURSES_LOOKUP_CATEGORY_COURSE_NAME;
-        default:
-            return COURSES_LOOKUP_CATEGORY_INVALID;
-    }
-}
-
 
 err_t courses_details_request_encode(uint8_t * course_code, uint8_t course_code_len, struct __message_t* out_msg) {
     if (course_code == NULL || out_msg == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
     protocol_encode(out_msg, REQUEST_TYPE_COURSES_DETAIL_LOOKUP, 0, course_code_len, course_code);
-    return ERR_COURSES_OK;
+    return ERR_OK;
 }
 
 err_t courses_details_request_decode(struct __message_t* in_msg, uint8_t* course_code, uint8_t course_code_size) {
     if (in_msg == NULL || course_code == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
 
     request_type_t type = protocol_get_request_type(in_msg);
     if (type != REQUEST_TYPE_COURSES_DETAIL_LOOKUP) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
 
 
@@ -123,36 +106,7 @@ err_t courses_details_request_decode(struct __message_t* in_msg, uint8_t* course
     protocol_decode(in_msg, NULL, NULL, &olen, course_code_size, course_code);
     course_code[olen] = '\0';
 
-    return ERR_COURSES_OK;
-}
-
-err_t courses_lookup_info_request_encode(courses_lookup_params_t* params, struct __message_t* out_msg) {
-    if (params == NULL || out_msg == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-    uint8_t flags = courses_flags_from_category(params->category);
-    protocol_encode(out_msg, REQUEST_TYPE_COURSES_LOOKUP_INFO, flags, strlen(params->course_code), (uint8_t*) params->course_code);
-    return ERR_COURSES_OK;
-}
-
-err_t courses_lookup_info_request_decode(struct __message_t* msg, courses_lookup_params_t* params) {
-    if (params == NULL || msg == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-
-    uint8_t type = protocol_get_request_type(msg);
-
-    if (type != REQUEST_TYPE_COURSES_LOOKUP_INFO && type != RESPONSE_TYPE_COURSES_LOOKUP_INFO) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-
-    bzero(params, sizeof(courses_lookup_params_t));
-    uint8_t flags = 0;
-    uint16_t olen = 0;
-    protocol_decode(msg, NULL, &flags, &olen, sizeof(params->course_code), (uint8_t*) params->course_code);
-    params->category = courses_category_from_flags(flags);
-
-    return ERR_COURSES_OK;
+    return ERR_OK;
 }
 
 // Get length of the words in a sentence
@@ -167,7 +121,7 @@ int get_word_length(char* sentence) {
 
 err_t courses_lookup_multiple_request_encode(struct __message_t* out_msg, uint8_t course_count, uint8_t* course_buffer, uint8_t course_buffer_size) {
     if (out_msg == NULL || course_buffer == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
 
     uint8_t* ptr = course_buffer;
@@ -187,17 +141,17 @@ err_t courses_lookup_multiple_request_encode(struct __message_t* out_msg, uint8_
         ptr += 1;
     }
     protocol_encode(out_msg, REQUEST_TYPE_COURSES_MULTI_LOOKUP, 0, buffer_len, buffer);
-    return ERR_COURSES_OK;
+    return ERR_OK;
 }
 
 err_t courses_lookup_multiple_request_decode(struct __message_t* in_msg, uint8_t* course_count, uint8_t* buffer, uint8_t buffer_len) {
     if (in_msg == NULL || buffer == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
 
     uint8_t type = protocol_get_request_type(in_msg);
     if (type != REQUEST_TYPE_COURSES_MULTI_LOOKUP) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
 
     uint8_t data_buffer[64];
@@ -208,7 +162,7 @@ err_t courses_lookup_multiple_request_decode(struct __message_t* in_msg, uint8_t
     memcpy(buffer, data_buffer + 1, olen - 1);
 
 
-    return ERR_COURSES_OK;
+    return ERR_OK;
 }
 
 uint8_t course_details_encode(course_t* course, uint8_t* buffer, uint8_t buffer_size) {
@@ -247,7 +201,7 @@ uint8_t course_details_encode(course_t* course, uint8_t* buffer, uint8_t buffer_
 
 err_t courses_lookup_multiple_response_encode(struct __message_t* out_msg, course_t* courses) {
     if (out_msg == NULL || courses == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
     
     uint8_t buffer[1016];
@@ -263,7 +217,7 @@ err_t courses_lookup_multiple_response_encode(struct __message_t* out_msg, cours
 
     protocol_encode(out_msg, RESPONSE_TYPE_COURSES_MULTI_LOOKUP, course_count, buffer_offset, buffer);
 
-    return ERR_COURSES_OK;
+    return ERR_OK;
 }
 
 course_t* course_details_decode(uint8_t* buffer, uint8_t buffer_size, uint16_t* bytes_read) {
@@ -323,123 +277,9 @@ course_t* courses_lookup_multiple_response_decode(struct __message_t* in_msg) {
     return courses;
 }
 
-err_t courses_lookup_info_response_encode_error(struct __message_t* out_msg, courses_lookup_params_t* params, uint8_t error_code) {
-    if (params == NULL || out_msg == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-    uint8_t buffer[64];
-    uint8_t buffer_len = 0;
-
-    uint8_t flags = courses_flags_from_category(params->category) | COURSE_LOOKUP_FLAGS_INVALID;
-
-    buffer[0] = strlen(params->course_code);
-    buffer_len += 1;
-    memcpy(buffer + buffer_len, params->course_code, strlen(params->course_code));
-    buffer_len += strlen(params->course_code);
-    buffer[buffer_len] = error_code;
-    buffer_len += 1;
-
-    protocol_encode(out_msg, RESPONSE_TYPE_COURSES_LOOKUP_INFO, flags, buffer_len, buffer);
-    return ERR_COURSES_OK;
-}
-
-err_t courses_lookup_info_response_decode_error(struct __message_t* msg, courses_lookup_params_t* params, uint8_t* error_code) {
-    if (params == NULL || msg == NULL || error_code == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-
-    uint8_t type = protocol_get_request_type(msg);
-
-    if (type != REQUEST_TYPE_COURSES_LOOKUP_INFO && type != RESPONSE_TYPE_COURSES_LOOKUP_INFO) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-
-    bzero(params, sizeof(courses_lookup_params_t));
-    uint8_t flags = 0;
-    uint16_t olen = 0;
-    uint8_t buffer[64];
-    protocol_decode(msg, NULL, &flags, &olen, sizeof(buffer), buffer);
-    params->category = courses_category_from_flags(flags);
-    if (COURSE_LOOKUP_MASK_INVALID(flags)) {
-        uint8_t course_code_len = buffer[0];
-        memcpy(params->course_code, buffer + 1, course_code_len);
-        params->course_code[course_code_len] = '\0';
-        *error_code = buffer[1 + course_code_len];
-    } else {
-        *error_code = 0;
-    }
-
-    return ERR_COURSES_OK;
-}
-
-err_t courses_lookup_info_response_encode(struct __message_t* out_msg, courses_lookup_params_t* params, uint8_t* info_buffer, uint8_t info_buffer_len) {
-
-    if (params == NULL || out_msg == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-
-    uint8_t flags = courses_flags_from_category(params->category);
-
-    uint8_t buffer[64];
-    uint8_t buffer_len = 0;
-
-    if (info_buffer != NULL && info_buffer_len > 0 && info_buffer_len <= 62) {
-        uint8_t buffer_offset = 0;
-        buffer[buffer_offset++] = strlen(params->course_code);
-        buffer[buffer_offset++] = info_buffer_len;
-        memcpy(buffer + buffer_offset, params->course_code, buffer[0]);
-        buffer_offset += buffer[0];
-        memcpy(buffer + buffer_offset, info_buffer, buffer[1]);
-        buffer_offset += buffer[1];
-        buffer_len = buffer_offset;
-        protocol_encode(out_msg, RESPONSE_TYPE_COURSES_LOOKUP_INFO, flags, buffer_len, buffer);
-        // LOG_BUFFER(buffer, buffer_len);
-    }
-
-    return ERR_COURSES_OK;
-}
-
-err_t courses_lookup_info_response_decode(struct __message_t* msg, courses_lookup_params_t* params, uint8_t* info_buffer, uint8_t info_buffer_size, uint8_t* info_len) {
-
-    if (params == NULL || msg == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-
-    uint8_t type = protocol_get_request_type(msg);
-    if (type != RESPONSE_TYPE_COURSES_LOOKUP_INFO) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-    uint8_t flags = 0;
-    uint8_t output_data_buffer[64];
-    uint16_t output_data_buffer_len = 0;
-    
-    protocol_decode(msg, NULL, &flags, &output_data_buffer_len, sizeof(output_data_buffer), output_data_buffer);    
-    // LOG_BUFFER(output_data_buffer, output_data_buffer_len);
-
-    params->category = courses_category_from_flags(flags);
-    memcpy(params->course_code, output_data_buffer + 2, output_data_buffer[0]);
-    params->course_code[output_data_buffer[0]] = '\0';
-    memcpy(info_buffer, output_data_buffer + 2 + output_data_buffer[0], output_data_buffer[1]);
-    info_buffer[output_data_buffer[1]] = '\0';
-    *info_len = output_data_buffer[1];
-
-    return ERR_COURSES_OK;
-}
-
-err_t courses_lookup_decode(udp_dgram_t* req_dgram, courses_lookup_params_t* params) {
-    if (req_dgram == NULL || params == NULL || req_dgram->data_len < 2) {
-        return ERR_COURSES_INVALID_PARAMETERS;
-    }
-
-    params->category = req_dgram->data[1];
-    memcpy(params->course_code, req_dgram->data + 2, req_dgram->data_len - 2);
-
-    return ERR_COURSES_OK;
-}
-
 err_t courses_details_response_decode(udp_dgram_t* req_dgram, course_t* course) {
     if (req_dgram == NULL || course == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
 
     uint8_t buffer[128];
@@ -472,12 +312,12 @@ err_t courses_details_response_decode(udp_dgram_t* req_dgram, course_t* course) 
 
     course->credits = buffer[++offset];
 
-    return ERR_COURSES_OK;
+    return ERR_OK;
 }
 
 err_t courses_details_response_encode(const course_t* course, struct __message_t* out_msg) {
     if (course == NULL || out_msg == NULL) {
-        return ERR_COURSES_INVALID_PARAMETERS;
+        return ERR_INVALID_PARAMETERS;
     }
 
     uint8_t buffer[256];
@@ -504,22 +344,5 @@ err_t courses_details_response_encode(const course_t* course, struct __message_t
 
     protocol_encode(out_msg, RESPONSE_TYPE_COURSES_DETAIL_LOOKUP, 0, offset, buffer);
 
-    return ERR_COURSES_OK;
-}
-
-char* courses_category_string_from_enum(courses_lookup_category_t category) {
-    switch (category) {
-        case COURSES_LOOKUP_CATEGORY_COURSE_CODE:
-            return "Course Code";
-        case COURSES_LOOKUP_CATEGORY_CREDITS:
-            return "Credits";
-        case COURSES_LOOKUP_CATEGORY_PROFESSOR:
-            return "Professor";
-        case COURSES_LOOKUP_CATEGORY_DAYS:
-            return "Days";
-        case COURSES_LOOKUP_CATEGORY_COURSE_NAME:
-            return "Course Name";
-        default:
-            return "Invalid";
-    }
+    return ERR_OK;
 }

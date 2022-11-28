@@ -1,18 +1,6 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <sys/wait.h>
-
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
@@ -28,9 +16,8 @@
  * @param s Pointer to string with whitespace
  * 
  * @return Pointer to trimmed string, NULL if s is NULL
- * 
  */ 
-char* string_ltrim(char* s);
+char* utils_string_ltrim(char* s);
 
 /**
  * @brief Trim left whitespace from the string
@@ -38,9 +25,8 @@ char* string_ltrim(char* s);
  * @param s Pointer to string with whitespace
  * 
  * @return Pointer to trimmed string, NULL if s is NULL
- * 
  */ 
-char* string_rtrim(char* s);
+char* utils_string_rtrim(char* s);
 
 /**
  * @brief Trim whitespace from the string
@@ -48,11 +34,16 @@ char* string_rtrim(char* s);
  * @param s Pointer to string with whitespace
  * 
  * @return Pointer to trimmed string, NULL if s is NULL
- * 
  */ 
-char* string_trim(char* s);
+char* utils_string_trim(char* s);
 
-/// Count words in a string
+/**
+ * @brief Count words in a string
+ *
+ * @param str Pointer to string
+ * 
+ * @return Number of words in the string
+ */
 int utils_get_word_count(char* str);
 
 #endif // __UTILS_H__

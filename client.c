@@ -153,7 +153,7 @@ static void send_request(client_context_t* ctx, int courses_count, uint8_t* cour
         protocol_courses_lookup_single_request_encode((const char*) course_code_buffer, strlen((const char*) course_code_buffer), category, &sgmnt);
     } else if (courses_count > 1) {
         LOG_DBG("Requesting course details for multiple course codes. (%s)", course_code_buffer);
-        courses_lookup_multiple_request_encode(&sgmnt, courses_count, course_code_buffer, course_code_buffer_size);
+        protocol_courses_lookup_multiple_request_encode(courses_count, course_code_buffer, course_code_buffer_size, &sgmnt);
     }
     tcp_client_send(ctx->client, &sgmnt);
 }
@@ -239,6 +239,7 @@ static void* user_input_task(void* params) {
 static void on_receive(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
     client_context_t* ctx = (client_context_t*) client->user_data;
     response_type_t response_type = protocol_get_request_type(sgmnt);
+    LOG_INFO(CLIENT_MESSAGE_ON_RESPONSE, ctx->client->port);
     switch (response_type) {
         case RESPONSE_TYPE_AUTH:
             on_auth_result(ctx, sgmnt);

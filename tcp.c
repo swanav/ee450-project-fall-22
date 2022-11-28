@@ -197,6 +197,16 @@ tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_
         return NULL;
     }
 
+    struct sockaddr_in addr = {0};
+    socklen_t addr_len = sizeof(addr);
+
+    if (getsockname(client->sd, (struct sockaddr*)&addr, &addr_len) < 0) {
+        LOG_ERR("tcp_client_connect: Failed to get socket name");
+    } else {
+        client->port = ntohs(addr.sin_port);
+        LOG_DBG("Locally bound to port %d", client->port);
+    }
+
     client->on_receive = on_receive;
     client->on_disconnect = on_disconnect;
 

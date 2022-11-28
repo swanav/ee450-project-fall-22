@@ -28,46 +28,26 @@ typedef enum {
 #define LOG_DBG(...)            log_text(LOG_LVL_DEBUG, TAG, __VA_ARGS__)
 #define LOG_VERBOSE(...)        log_text(LOG_LVL_VERBOSE, TAG, __VA_ARGS__)
 #define LOG_BUFFER(buffer, len) log_dbg_buffer(TAG, #buffer, buffer, len)
-
-#define LOG_FUNCTION_ENTRY()             LOG_VERBOSE("Entering %s", __func__)
-#define LOG_FUNCTION_ENTRY_DEVICE(index) LOG_VERBOSE("Entering %s for device index %d", __func__, index)
-#define LOG_FUNCTION_EXIT()              LOG_VERBOSE("Exiting  %s", __func__)
-
-#define LOG_VAR_NULL(var)  LOG_WARN("%s: %s -> null", __func__, #var)
-#define LOG_VAR_STR(var)   LOG_DBG("%s: %s -> %s", __func__, #var, var ? var : "null")
-#define LOG_VAR_INT(var)   LOG_DBG("%s: %s -> %d", __func__, #var, var)
-#define LOG_VAR_HEX(var)   LOG_DBG("%s: %s -> 0x%04X", __func__, #var, var)
-#define LOG_VAR_LONG(var)  LOG_DBG("%s: %s -> %ld", __func__, #var, var)
-#define LOG_VAR_FLOAT(var) LOG_DBG("%s: %s -> %f", __func__, #var, var)
-
 #else
 #define LOG_DBG(...)
 #define LOG_VERBOSE(...)
 #define LOG_BUFFER(...)
-
-#define LOG_FUNCTION_ENTRY()
-#define LOG_FUNCTION_ENTRY_DEVICE(index)
-#define LOG_FUNCTION_EXIT()
-
-#define LOG_VAR_NULL(arg)
-#define LOG_VAR_STR(var)
-#define LOG_VAR_INT(var)
-#define LOG_VAR_HEX(var)
-#define LOG_VAR_LONG(var)
-#define LOG_VAR_FLOAT(var)
-
 #endif
 
 void log_text(const LogLevel_t logLevel, const char* tag, const char* format, ...);
 void log_dbg_buffer(const char* tag, const char* buffer_name, const uint8_t* buffer, size_t len);
 
 /**
+ * @brief Log a course
  * 
+ * @param course Pointer to the course to log
 */
 void log_course(const void* course);
 
 /**
  * @brief Print the given courses linked list
+ * 
+ * @param head Pointer to the head of the linked list
  * 
 */
 void log_courses(const void* head);

@@ -214,12 +214,22 @@ err_t protocol_courses_lookup_multiple_response_decode(const struct __message_t*
 void protocol_courses_lookup_multiple_response_decode_dealloc(course_t* course);
 ```
 
-```c
-err_t protocol_courses_error_encode(const err_t error_code, struct __message_t* out_dgrm);
+---
 
-err_t protocol_courses_error_decode(const struct __message_t* in_dgrm, err_t* error_code);
+***Course Lookup Error Response***
+
+```
+| Protocol Header |
+| <   4 bytes   > |
 ```
 
+`Type = RESPONSE_TYPE_COURSES_ERROR (0x75)`
+
+`Flags = Error Code` (Listed in error.h)
+
+`Length = 0`
+
+-----
 -----
 ***Any idiosyncrasy of your project. It should say under what conditions the project fails, if any.***
 

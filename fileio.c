@@ -10,6 +10,7 @@ LOG_TAG(fileio.c);
 
 #define CSV_SPLIT_TOKEN ",\r\n"
 
+#if defined(SERVER_C) || defined(SERVER_EE) || defined(SERVER_CS)
 static FILE* csv_open(const char* filename) {
     FILE* fp = fopen(filename, "r");
     if (fp == NULL) {
@@ -22,7 +23,9 @@ static FILE* csv_open(const char* filename) {
 static void csv_close(FILE* fp) {
     fclose(fp);
 }
+#endif // SERVER_C || SERVER_EE || SERVER_CS
 
+#if defined(SERVER_C)
 credentials_t* fileio_credential_server_db_create(const char* filename) {
 
     if (filename == NULL) return NULL;
@@ -84,6 +87,9 @@ void fileio_credential_server_db_free(credentials_t* db) {
     }
 }
 
+#endif // SERVER_C
+
+#if defined(SERVER_EE) || defined(SERVER_CS)
 course_t* fileio_department_server_db_create(const char* filename) {
     course_t* head = NULL;
     course_t* tail = NULL;
@@ -135,7 +141,7 @@ course_t* fileio_department_server_db_create(const char* filename) {
         }
     }
 
-    fclose(fp);
+    csv_close(fp);
     return head;
 }
 
@@ -147,3 +153,4 @@ void fileio_department_server_db_free(course_t* head) {
         entry = next;
     }
 }
+#endif // SERVER_EE || SERVER_CS

@@ -45,7 +45,7 @@ request_type_t protocol_get_request_type(const struct __message_t* message) {
     return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? REQUEST_RESPONSE_INVALID_TYPE : message->data[REQUEST_RESPONSE_TYPE_OFFSET];
 }
 
-err_t protocol_authentication_request_encode(const credentials_t* credentials, udp_dgram_t* out_dgrm) {
+err_t protocol_authentication_request_encode(const credentials_t* credentials, struct __message_t* out_dgrm) {
     if (credentials == NULL || out_dgrm == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -65,7 +65,7 @@ err_t protocol_authentication_request_encode(const credentials_t* credentials, u
     return ERR_OK;
 }
 
-err_t protocol_authentication_request_decode(const udp_dgram_t* in_dgrm, credentials_t* credentials) {
+err_t protocol_authentication_request_decode(const struct __message_t* in_dgrm, credentials_t* credentials) {
 
     if (!in_dgrm || !credentials) {
         return ERR_INVALID_PARAMETERS;
@@ -90,7 +90,7 @@ err_t protocol_authentication_request_decode(const udp_dgram_t* in_dgrm, credent
     return ERR_OK;
 }
 
-err_t protocol_authentication_response_encode(const uint8_t authentication_result, udp_dgram_t* out_dgrm) {
+err_t protocol_authentication_response_encode(const uint8_t authentication_result, struct __message_t* out_dgrm) {
     if (out_dgrm == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -98,7 +98,7 @@ err_t protocol_authentication_response_encode(const uint8_t authentication_resul
     return ERR_OK;
 }
 
-err_t protocol_authentication_response_decode(const udp_dgram_t* in_dgrm, uint8_t* authentication_result) {
+err_t protocol_authentication_response_decode(const struct __message_t* in_dgrm, uint8_t* authentication_result) {
     if (in_dgrm == NULL || authentication_result == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -115,7 +115,7 @@ err_t protocol_authentication_response_decode(const udp_dgram_t* in_dgrm, uint8_
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_single_request_encode(const char* course_code, const uint8_t course_code_len, const courses_lookup_category_t category, udp_dgram_t* out_dgrm) {
+err_t protocol_courses_lookup_single_request_encode(const char* course_code, const uint8_t course_code_len, const courses_lookup_category_t category, struct __message_t* out_dgrm) {
     if (course_code == NULL || course_code_len == 0 || category < COURSES_LOOKUP_CATEGORY_COURSE_CODE || category > COURSES_LOOKUP_CATEGORY_INVALID || out_dgrm == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -123,7 +123,7 @@ err_t protocol_courses_lookup_single_request_encode(const char* course_code, con
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_single_request_decode(const udp_dgram_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category) {
+err_t protocol_courses_lookup_single_request_decode(const struct __message_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category) {
     if (in_dgrm == NULL || course_code == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -146,7 +146,7 @@ err_t protocol_courses_lookup_single_request_decode(const udp_dgram_t* in_dgrm, 
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_single_response_encode(const char* course_code, const uint8_t course_code_len, const courses_lookup_category_t category, const uint8_t* information, const uint8_t information_len, udp_dgram_t* out_dgrm) {
+err_t protocol_courses_lookup_single_response_encode(const char* course_code, const uint8_t course_code_len, const courses_lookup_category_t category, const uint8_t* information, const uint8_t information_len, struct __message_t* out_dgrm) {
     if (course_code == NULL || course_code_len == 0 || category < COURSES_LOOKUP_CATEGORY_COURSE_CODE || category > COURSES_LOOKUP_CATEGORY_INVALID || information == NULL || information_len == 0 || out_dgrm == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -169,7 +169,7 @@ err_t protocol_courses_lookup_single_response_encode(const char* course_code, co
     return ERR_OUT_OF_MEMORY;
 }
 
-err_t protocol_courses_lookup_single_response_decode(const udp_dgram_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category, uint8_t* information, uint8_t* information_len) {
+err_t protocol_courses_lookup_single_response_decode(const struct __message_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category, uint8_t* information, uint8_t* information_len) {
     if (in_dgrm == NULL || course_code == NULL || course_code_len == NULL || category == NULL || information == NULL || information_len == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -195,7 +195,7 @@ err_t protocol_courses_lookup_single_response_decode(const udp_dgram_t* in_dgrm,
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, const uint8_t course_code_len, udp_dgram_t* out_dgrm) {
+err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, const uint8_t course_code_len, struct __message_t* out_dgrm) {
     if (course_code == NULL || out_dgrm == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -203,7 +203,7 @@ err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, 
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_detail_request_decode(const udp_dgram_t* in_dgrm, uint8_t* course_code, uint8_t* course_code_len) {
+err_t protocol_courses_lookup_detail_request_decode(const struct __message_t* in_dgrm, uint8_t* course_code, uint8_t* course_code_len) {
     if (in_dgrm == NULL || course_code == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -222,7 +222,7 @@ err_t protocol_courses_lookup_detail_request_decode(const udp_dgram_t* in_dgrm, 
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_detail_response_encode(const course_t* course, udp_dgram_t* out_dgrm) {
+err_t protocol_courses_lookup_detail_response_encode(const course_t* course, struct __message_t* out_dgrm) {
     if (course == NULL || out_dgrm == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -254,7 +254,7 @@ err_t protocol_courses_lookup_detail_response_encode(const course_t* course, udp
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_detail_response_decode(const udp_dgram_t* in_dgrm, course_t* course) {
+err_t protocol_courses_lookup_detail_response_decode(const struct __message_t* in_dgrm, course_t* course) {
     if (in_dgrm == NULL || course == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -318,7 +318,7 @@ err_t protocol_courses_lookup_multiple_request_encode(const uint8_t course_count
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_multiple_request_decode(const udp_dgram_t* in_dgrm, uint8_t* course_count, single_course_code_handler_t handler) {
+err_t protocol_courses_lookup_multiple_request_decode(const struct __message_t* in_dgrm, uint8_t* course_count, single_course_code_handler_t handler) {
     if (in_dgrm == NULL || handler == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -377,7 +377,7 @@ static uint8_t course_details_encode(course_t* course, uint8_t* buffer, uint8_t 
     return buffer_offset;
 }
 
-err_t protocol_courses_lookup_multiple_response_encode(const course_t* courses, udp_dgram_t* out_dgrm) {
+err_t protocol_courses_lookup_multiple_response_encode(const course_t* courses, struct __message_t* out_dgrm) {
     if (out_dgrm == NULL || courses == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -430,7 +430,7 @@ static course_t* course_details_decode(uint8_t* buffer, uint8_t buffer_size, uin
     return course;
 }
 
-err_t protocol_courses_lookup_multiple_response_decode(const udp_dgram_t* in_dgrm, course_t** courses_ret) {
+err_t protocol_courses_lookup_multiple_response_decode(const struct __message_t* in_dgrm, course_t** courses_ret) {
     if (in_dgrm == NULL || courses_ret == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
@@ -472,12 +472,12 @@ void protocol_courses_lookup_multiple_response_decode_dealloc(course_t* course) 
     }
 }
 
-err_t protocol_courses_error_encode(const err_t error_code, udp_dgram_t* out_dgrm) {
+err_t protocol_courses_error_encode(const err_t error_code, struct __message_t* out_dgrm) {
     protocol_encode(out_dgrm, RESPONSE_TYPE_COURSES_ERROR, error_code, 0, NULL);
     return ERR_OK;
 }
 
-err_t protocol_courses_error_decode(const udp_dgram_t* in_dgrm, err_t* error_code) {
+err_t protocol_courses_error_decode(const struct __message_t* in_dgrm, err_t* error_code) {
     if (in_dgrm == NULL || error_code == NULL) {
         return ERR_INVALID_PARAMETERS;
     }

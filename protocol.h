@@ -85,7 +85,7 @@ request_type_t protocol_get_request_type(const struct __message_t* message);
  * @param out_dgrm [out] Datagram to encode into
  * @return err_t 
  */
-err_t protocol_authentication_request_encode(const credentials_t* credentials, udp_dgram_t* out_dgrm);
+err_t protocol_authentication_request_encode(const credentials_t* credentials, struct __message_t* out_dgrm);
 
 /**
  * @brief Decode a authentication request
@@ -97,7 +97,7 @@ err_t protocol_authentication_request_encode(const credentials_t* credentials, u
  * @param credentials [out] Credentials to decode into
  * @return err_t 
  */
-err_t protocol_authentication_request_decode(const udp_dgram_t* in_dgrm, credentials_t* credentials);
+err_t protocol_authentication_request_decode(const struct __message_t* in_dgrm, credentials_t* credentials);
 
 /**
  * @brief Encode a credentials response
@@ -106,7 +106,7 @@ err_t protocol_authentication_request_decode(const udp_dgram_t* in_dgrm, credent
  * @param out_dgrm [out] The encoded datagram
  * @return err_t 
  */
-err_t protocol_authentication_response_encode(const uint8_t authentication_result, udp_dgram_t* out_dgrm);
+err_t protocol_authentication_response_encode(const uint8_t authentication_result, struct __message_t* out_dgrm);
 
 /**
  * @brief Decodes a credentials response
@@ -167,7 +167,7 @@ err_t protocol_courses_lookup_single_response_encode(const char* course_code, co
  * 
  * @return err_t 
  */
-err_t protocol_courses_lookup_single_response_decode(const udp_dgram_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category, uint8_t* information, uint8_t* information_len);
+err_t protocol_courses_lookup_single_response_decode(const struct __message_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category, uint8_t* information, uint8_t* information_len);
 
 /**
  * @brief Encode a course detail lookup request
@@ -178,7 +178,7 @@ err_t protocol_courses_lookup_single_response_decode(const udp_dgram_t* in_dgrm,
  * 
  * @return err_t 
  */
-err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, const uint8_t course_code_len, udp_dgram_t* out_dgrm);
+err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, const uint8_t course_code_len, struct __message_t* out_dgrm);
 
 /**
  * @brief Decode a course detail lookup request
@@ -189,7 +189,7 @@ err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, 
  * 
  * @return err_t 
  */
-err_t protocol_courses_lookup_detail_request_decode(const udp_dgram_t* in_dgrm, uint8_t* course_code, uint8_t* course_code_len);
+err_t protocol_courses_lookup_detail_request_decode(const struct __message_t* in_dgrm, uint8_t* course_code, uint8_t* course_code_len);
 
 /**
  * @brief Encode a course detail lookup response
@@ -199,12 +199,12 @@ err_t protocol_courses_lookup_detail_request_decode(const udp_dgram_t* in_dgrm, 
  * 
  * @return err_t 
  */
-err_t protocol_courses_lookup_detail_response_encode(const course_t* course, udp_dgram_t* out_dgrm);
+err_t protocol_courses_lookup_detail_response_encode(const course_t* course, struct __message_t* out_dgrm);
 
 /**
  * @brief Decode a course detail lookup response
 */
-err_t protocol_courses_lookup_detail_response_decode(const udp_dgram_t* in_dgrm, course_t* course);
+err_t protocol_courses_lookup_detail_response_decode(const struct __message_t* in_dgrm, course_t* course);
 
 /**
  * @brief Encode a course list lookup request
@@ -229,7 +229,7 @@ typedef void (*single_course_code_handler_t)(const uint8_t idx, const char* cour
  * 
  * @return err_t 
  */
-err_t protocol_courses_lookup_multiple_request_decode(const udp_dgram_t* in_dgrm, uint8_t* course_count, single_course_code_handler_t handler);
+err_t protocol_courses_lookup_multiple_request_decode(const struct __message_t* in_dgrm, uint8_t* course_count, single_course_code_handler_t handler);
 
 /**
  * @brief Encode a course list lookup response
@@ -239,7 +239,7 @@ err_t protocol_courses_lookup_multiple_request_decode(const udp_dgram_t* in_dgrm
  * 
  * @return err_t 
  */
-err_t protocol_courses_lookup_multiple_response_encode(const course_t* courses, udp_dgram_t* out_dgrm);
+err_t protocol_courses_lookup_multiple_response_encode(const course_t* courses, struct __message_t* out_dgrm);
 
 /**
  * @brief Decode a course list lookup response
@@ -251,7 +251,7 @@ err_t protocol_courses_lookup_multiple_response_encode(const course_t* courses, 
  * 
  * @return err_t 
  */
-err_t protocol_courses_lookup_multiple_response_decode(const udp_dgram_t* in_dgrm, course_t** courses);
+err_t protocol_courses_lookup_multiple_response_decode(const struct __message_t* in_dgrm, course_t** courses);
 
 /**
  * @brief Deallocate the memory used by a course list lookup response
@@ -268,7 +268,7 @@ void protocol_courses_lookup_multiple_response_decode_dealloc(course_t* course);
  * 
  * @return err_t 
  */
-err_t protocol_courses_error_encode(const err_t error_code, udp_dgram_t* out_dgrm);
+err_t protocol_courses_error_encode(const err_t error_code, struct __message_t* out_dgrm);
 
 /**
  * @brief Decode a course lookup error
@@ -276,6 +276,6 @@ err_t protocol_courses_error_encode(const err_t error_code, udp_dgram_t* out_dgr
  * @param in_dgrm [in] The datagram to decode
  * @param error_code [out] The error code
  */
-err_t protocol_courses_error_decode(const udp_dgram_t* in_dgrm, err_t* error_code);
+err_t protocol_courses_error_decode(const struct __message_t* in_dgrm, err_t* error_code);
 
 #endif // PROTOCOL_H

@@ -9,6 +9,7 @@
 
 LOG_TAG(udp);
 
+#if defined(SERVER_M) || defined(SERVER_C) || defined(SERVER_CS) || defined(SERVER_EE)
 udp_ctx_t* udp_start(uint16_t port) {
     udp_ctx_t* udp = (udp_ctx_t*) calloc(1, sizeof(udp_ctx_t));
 
@@ -75,3 +76,4 @@ void udp_send(udp_ctx_t* udp, udp_endpoint_t* dst, udp_dgram_t* dgram) {
         }
     }
 }
+#endif // SERVER_M || SERVER_C || SERVER_CS || SERVER_EE

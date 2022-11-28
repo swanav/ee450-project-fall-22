@@ -3,6 +3,7 @@
 
 #include "protocol.h"
 
+#if defined(SERVER_C)
 /**
  * @brief Create the credentials db from the given file
  * 
@@ -17,7 +18,9 @@ credentials_t* fileio_credential_server_db_create(const char* filename);
  * @param credentials The credentials linked list to free
  */
 void fileio_credential_server_db_free(credentials_t* credentials);
+#endif // SERVER_C
 
+#if defined(SERVER_EE) || defined(SERVER_CS)
 /**
  * @brief Create the courses db from the given file
  * 
@@ -32,5 +35,6 @@ course_t* fileio_department_server_db_create(const char* filename);
  * @param courses The credentials linked list to free
  */
 void fileio_department_server_db_free(course_t* courses);
+#endif // SERVER_EE || SERVER_CS
 
 #endif // FILEIO_H

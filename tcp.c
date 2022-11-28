@@ -9,6 +9,7 @@
 
 LOG_TAG(tcp);
 
+#if defined(SERVER_M)
 // Create and Start a TCP Server
 tcp_server_t* tcp_server_start(uint16_t port) {
     tcp_server_t* server = (tcp_server_t*) calloc(1, sizeof(tcp_server_t));
@@ -171,7 +172,9 @@ void tcp_server_send(tcp_server_t* server, tcp_endpoint_t* dst, tcp_sgmnt_t* seg
         }
     }
 }
+#endif //SERVER_M
 
+#if defined(CLIENT)
 tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_receive, tcp_disconnect_handler_t on_disconnect) {
     tcp_client_t* client = malloc(sizeof(tcp_client_t));
     if (!client) {
@@ -244,3 +247,4 @@ void tcp_client_receive(tcp_client_t* client) {
         }
     }
 }
+#endif // CLIENT

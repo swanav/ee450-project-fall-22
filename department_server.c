@@ -1,4 +1,4 @@
-#include "courses.h"
+#include "database.h"
 #include "department_server.h"
 #include "fileio.h"
 #include "log.h"
@@ -20,10 +20,10 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
     if (protocol_courses_lookup_single_request_decode(req_dgram, course_code, &size, &category) != ERR_OK) {
         protocol_courses_error_encode(ERR_REQ_INVALID, resp_dgram);
     } else {
-        LOG_INFO(SERVER_SUB_MESSAGE_ON_LOOKUP_REQUEST_RECEIVED, subject_code, courses_category_string_from_enum(category), course_code);
+        LOG_INFO(SERVER_SUB_MESSAGE_ON_LOOKUP_REQUEST_RECEIVED, subject_code, database_courses_category_string_from_enum(category), course_code);
         uint8_t info[128] = {0};
         size_t info_len = 0;
-        course_t* course = courses_lookup(db, course_code);
+        course_t* course = database_courses_lookup(db, course_code);
         if (!course) {
             LOG_WARN(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, course_code);
             protocol_courses_error_encode(ERR_COURSES_NOT_FOUND, resp_dgram);
@@ -32,8 +32,8 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
             protocol_courses_error_encode(ERR_REQ_INVALID, resp_dgram);
         } else {
             LOG_DBG("Course found: %s", course->course_code);
-            if (courses_lookup_info(course, category, info, sizeof(info), &info_len) == ERR_OK) {
-                LOG_INFO(SERVER_SUB_MESSAGE_ON_COURSE_FOUND, courses_category_string_from_enum(category), course_code, info);
+            if (database_courses_lookup_info(course, category, info, sizeof(info), &info_len) == ERR_OK) {
+                LOG_INFO(SERVER_SUB_MESSAGE_ON_COURSE_FOUND, database_courses_category_string_from_enum(category), course_code, info);
                 protocol_courses_lookup_single_response_encode(course_code, size, category, info, info_len, resp_dgram);
             }
         }
@@ -47,7 +47,7 @@ static void handle_course_detail_lookup_request(udp_dgram_t* req_dgram, udp_dgra
         protocol_courses_error_encode(ERR_REQ_INVALID, resp_dgram);
     } else {
         LOG_INFO(SERVER_SUB_MESSAGE_ON_SUMMARY_REQUEST_RECEIVED, subject_code, course_code);
-        course_t* course = courses_lookup(db, (const char*) course_code);
+        course_t* course = database_courses_lookup(db, (const char*) course_code);
         if (!course) {
             LOG_WARN(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, course_code);
             protocol_courses_error_encode(ERR_COURSES_NOT_FOUND, resp_dgram);

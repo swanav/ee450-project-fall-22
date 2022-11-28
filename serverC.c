@@ -7,7 +7,7 @@ authentication status.
 
 ---------------------------------------------------*/
 
-#include "credentials.h"
+#include "database.h"
 #include "constants.h"
 #include "fileio.h"
 #include "log.h"
@@ -29,7 +29,7 @@ static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram
         LOG_ERR("Failed to parse authentication request");
     } else {
         LOG_INFO(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED_FOR_USER, credentials.username_len, credentials.username);
-        err_t auth_status = credentials_validate(credentials_db, &credentials);
+        err_t auth_status = database_credentials_validate(credentials_db, &credentials);
         if (auth_status == ERR_INVALID_PARAMETERS) {
             LOG_WARN("Failed to validate credentials: Invalid Parameters");
         } else if (auth_status == ERR_CREDENTIALS_USER_NOT_FOUND) {

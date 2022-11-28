@@ -75,10 +75,6 @@ typedef struct __course_t {
 
 request_type_t protocol_get_request_type(const struct __message_t* message);
 
-uint16_t protocol_get_payload_len(const struct __message_t* message);
-
-uint8_t protocol_get_flags(const struct __message_t* message);
-
 /**
  * @brief Encode a authentication request.
  * 

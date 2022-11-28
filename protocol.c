@@ -5,6 +5,15 @@
 #include "protocol.h"
 #include "utils.h"
 
+
+static uint16_t protocol_get_payload_len(const struct __message_t* message) {
+    return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? REQUEST_RESPONSE_INVALID_TYPE : message->data[REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET_1] | (message->data[REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET_2] << 8);
+}
+
+static uint8_t protocol_get_flags(const struct __message_t* message) {
+    return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? 0 : message->data[REQUEST_RESPONSE_FLAGS_OFFSET];
+}
+
 static void protocol_encode(struct __message_t* message, const uint8_t type, const uint8_t flags, const uint16_t payload_len, const uint8_t* payload) {
     if (sizeof(message->data) >= payload_len + REQUEST_RESPONSE_HEADER_LEN) {
         message->data[REQUEST_RESPONSE_TYPE_OFFSET] = type;
@@ -34,14 +43,6 @@ static void protocol_decode(const struct __message_t* message, request_type_t* r
 
 request_type_t protocol_get_request_type(const struct __message_t* message) {
     return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? REQUEST_RESPONSE_INVALID_TYPE : message->data[REQUEST_RESPONSE_TYPE_OFFSET];
-}
-
-uint16_t protocol_get_payload_len(const struct __message_t* message) {
-    return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? REQUEST_RESPONSE_INVALID_TYPE : message->data[REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET_1] | (message->data[REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET_2] << 8);
-}
-
-uint8_t protocol_get_flags(const struct __message_t* message) {
-    return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? 0 : message->data[REQUEST_RESPONSE_FLAGS_OFFSET];
 }
 
 err_t protocol_authentication_request_encode(const credentials_t* credentials, udp_dgram_t* out_dgrm) {

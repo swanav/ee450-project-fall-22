@@ -18,7 +18,7 @@
 #include "utils.h"
 #include "messages.h"
 #include "constants.h"
-#include "courses.h"
+#include "database.h"
 
 LOG_TAG(client);
 
@@ -152,7 +152,7 @@ static void on_setup_complete(client_context_t* ctx) {
 static void send_request(client_context_t* ctx, int courses_count, uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {
     tcp_sgmnt_t sgmnt = {0};
     if (courses_count == 1) {
-        courses_lookup_category_t category = courses_lookup_category_from_string(utils_string_trim((char*) category_buffer));
+        courses_lookup_category_t category = database_courses_lookup_category_from_string(utils_string_trim((char*) category_buffer));
         if (category == COURSES_LOOKUP_CATEGORY_INVALID) {
             LOG_ERR("Invalid category.");
             sem_post(&ctx->semaphore);
@@ -180,7 +180,7 @@ static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
     } else if (category == COURSES_LOOKUP_CATEGORY_INVALID) {
         LOG_ERR("Invalid query.");
     } else {
-        LOG_INFO("The %s of %s is %.*s", courses_category_string_from_enum(category), course_code, information_len, information);
+        LOG_INFO("The %s of %s is %.*s", database_courses_category_string_from_enum(category), course_code, information_len, information);
     }
 }
 

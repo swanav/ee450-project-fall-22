@@ -13,8 +13,7 @@
 #include <semaphore.h>
 
 #include "constants.h"
-#include "credentials.h"
-#include "courses.h"
+#include "database.h"
 #include "log.h"
 #include "protocol.h"
 #include "messages.h"
@@ -42,7 +41,7 @@ static void authenticate_user(credentials_t* user) {
         udp_dgram_t dgram = {0};
         credentials_t enc_user = {0};
 
-        if (credentials_encrypt(user, &enc_user) == ERR_OK) {
+        if (database_credentials_encrypt(user, &enc_user) == ERR_OK) {
             if (protocol_authentication_request_encode(&enc_user, &dgram) == ERR_OK) {
                 udp_send(udp, &serverC, &dgram);
                 LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
@@ -111,7 +110,7 @@ static void on_course_lookup_info_request_received(tcp_server_t* tcp, tcp_endpoi
     courses_lookup_category_t category = COURSES_LOOKUP_CATEGORY_INVALID;
 
     if (protocol_courses_lookup_single_request_decode(req_sgmnt, course_code, &size, &category) == ERR_OK) {
-        LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "\"user\"", course_code, courses_category_string_from_enum(category), ntohs(src->addr.sin_port));
+        LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "\"user\"", course_code, database_courses_category_string_from_enum(category), ntohs(src->addr.sin_port));
         request_course_category_information(course_code, size, category);
     } else {
         LOG_ERR("Failed to decode course lookup info request");
@@ -126,13 +125,13 @@ static void drop_linked_list(course_t* ptr) {
     }
 }
 
-void single_course_code_handler(const uint8_t idx, const char* course_code, const uint8_t course_code_len) {
+static void single_course_code_handler(const uint8_t idx, const char* course_code, const uint8_t course_code_len) {
     LOG_DBG("%d) Requesting course details for %.*s", idx, course_code_len, course_code);
     request_course_details((const uint8_t*) course_code, course_code_len);
     sem_wait(&semaphore);
 }
 
-void* multi_request_thread(void* params) {
+static void* multi_request_thread(void* params) {
     LOG_DBG("Starting multi request thread");
     tcp_sgmnt_t* req_sgmnt = (tcp_sgmnt_t*) params;
 
@@ -158,7 +157,7 @@ static void on_course_lookup_multi_request_received(tcp_server_t* tcp, tcp_endpo
     pthread_create(&thread, NULL, multi_request_thread, (void*) req_sgmnt);
 }
 
-course_t* insert_to_end_of_linked_list(course_t* list, course_t* item) {
+static course_t* insert_to_end_of_linked_list(course_t* list, course_t* item) {
     item->next = NULL;
     if (list == NULL) {
         list = item;
@@ -171,7 +170,6 @@ course_t* insert_to_end_of_linked_list(course_t* list, course_t* item) {
     }
     return list;
 }
-
 
 static void on_single_course_lookup_info_response_received(udp_dgram_t* req_dgram) {
     tcp_server_send(tcp, tcp->endpoints, req_dgram);

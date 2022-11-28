@@ -23,6 +23,11 @@
 LOG_TAG(client);
 
 // #define CLIENT_TEST
+#ifdef CLIENT_TEST
+#define TEST_USERNAME "james"
+#define TEST_PASSWORD "2kAnsa7s)"
+#define TEST_COURSE_INPUT "EE604 CS100 EE450 CS310 EE608 CS561 EE658 CS435 EE520 CS356"
+#endif // CLIENT_TEST
 
 typedef struct __client_context_t {
     int auth_failure_count;
@@ -39,13 +44,13 @@ static err_t collect_credentials(credentials_t* user) {
     char buffer[max(CREDENTIALS_MAX_USERNAME_LEN, CREDENTIALS_MAX_PASSWORD_LEN) + 1];
 #endif // CLIENT_TEST
 
-    printf("Enter username: ");
+    printf(CLIENT_MESSAGE_INPUT_USERNAME);
     fflush(stdout);
 
 #ifdef CLIENT_TEST
-    user->username_len = strlen("james");
-    memcpy(user->username, "james", user->username_len);
-    LOG_WARN("james\r\n");
+    user->username_len = strlen(TEST_USERNAME);
+    memcpy(user->username, TEST_USERNAME, user->username_len);
+    LOG_WARN(TEST_USERNAME"\r\n");
 #else
     if (fgets(buffer, sizeof(buffer), stdin)) {
         memcpy(user->username, utils_string_rtrim_newlines(buffer), strlen(utils_string_rtrim_newlines(buffer))); 
@@ -54,16 +59,16 @@ static err_t collect_credentials(credentials_t* user) {
 
 #endif
     if (user->username_len < CREDENTIALS_MIN_USERNAME_LEN || user->username_len > CREDENTIALS_MAX_USERNAME_LEN) {
-        LOG_ERR("Username length not within bounds (Expected: %d ~ %d characters)", CREDENTIALS_MIN_USERNAME_LEN, CREDENTIALS_MAX_USERNAME_LEN);
+        LOG_ERR(CLIENT_MESSAGE_USERNAME_OUT_OF_BOUNDS, CREDENTIALS_MIN_USERNAME_LEN, CREDENTIALS_MAX_USERNAME_LEN);
         return ERR_INVALID_PARAMETERS;
     }
 
-    printf("Enter password: ");
+    printf(CLIENT_MESSAGE_INPUT_PASSWORD);
     fflush(stdout);
 #ifdef CLIENT_TEST
-    user->password_len = strlen("2kAnsa7s)");
-    memcpy(user->password, "2kAnsa7s)", user->password_len);
-    LOG_WARN("2kAnsa7s)\r\n");
+    user->password_len = strlen(TEST_PASSWORD);
+    memcpy(user->password, TEST_PASSWORD, user->password_len);
+    LOG_WARN(TEST_PASSWORD"\r\n");
 #else
     if (fgets(buffer, sizeof(buffer), stdin)) {
         memcpy(user->password, utils_string_rtrim_newlines(buffer), strlen(utils_string_rtrim_newlines(buffer))); 
@@ -71,7 +76,7 @@ static err_t collect_credentials(credentials_t* user) {
     }
 #endif 
     if (user->password_len < CREDENTIALS_MIN_PASSWORD_LEN || user->password_len > CREDENTIALS_MAX_PASSWORD_LEN) {
-        LOG_ERR("Password length not within bounds (Expected: %d ~ %d characters)", CREDENTIALS_MIN_PASSWORD_LEN, CREDENTIALS_MAX_PASSWORD_LEN);
+        LOG_ERR(CLIENT_MESSAGE_PASSWORD_OUT_OF_BOUNDS, CREDENTIALS_MIN_PASSWORD_LEN, CREDENTIALS_MAX_PASSWORD_LEN);
         return ERR_INVALID_PARAMETERS;
     }
 
@@ -80,7 +85,7 @@ static err_t collect_credentials(credentials_t* user) {
 
 static int collect_course_codes(uint8_t* course_code, uint8_t course_code_buffer_size) {
 #ifdef CLIENT_TEST
-    strncpy((char*) course_code, "EE604 CS100 EE450 CS310 EE608 CS561 EE658 CS435 EE520 CS356", course_code_buffer_size);
+    strncpy((char*) course_code, TEST_COURSE_INPUT, course_code_buffer_size);
 #else
     fgets((char*) course_code, course_code_buffer_size, stdin);
 #endif // CLIENT_TEST
@@ -88,10 +93,12 @@ static int collect_course_codes(uint8_t* course_code, uint8_t course_code_buffer
 }
 
 static int new_request_prompt(uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {
-    LOG_WARN("Please enter the course code to query: ");
+    printf(CLIENT_MESSAGE_INPUT_COURSE_NAME);
+    fflush(stdout);
     int courses_count = collect_course_codes(course_code_buffer, course_code_buffer_size);
     if (courses_count == 1) {
-        LOG_WARN("Please enter the category (Credit / Professor / Days / CourseName): ");
+        printf(CLIENT_MESSAGE_INPUT_LOOKUP_CATEGORY);
+        fflush(stdout);
         fgets((char*) category_buffer, category_buffer_size, stdin);
     }
     return courses_count;

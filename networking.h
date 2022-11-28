@@ -22,8 +22,10 @@ struct __message_t {
 
 /* ------------------------------------------ TCP --------------------------------------------- */
 
+#if defined(CLIENT) || defined(SERVER_M)
 typedef struct __message_t tcp_sgmnt_t;
 typedef struct ip_dest_t tcp_endpoint_t;
+#endif // CLIENT || SERVER_M
 
 #if defined(CLIENT)
 

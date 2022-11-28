@@ -292,7 +292,7 @@ err_t protocol_courses_lookup_detail_response_decode(const struct __message_t* i
     return ERR_OK;
 }
 
-err_t protocol_courses_lookup_multiple_request_encode(const uint8_t course_count, const uint8_t* course_codes_buffer, const uint8_t course_codes_buffer_len, tcp_sgmnt_t* out_sgmnt) {
+err_t protocol_courses_lookup_multiple_request_encode(const uint8_t course_count, const uint8_t* course_codes_buffer, const uint8_t course_codes_buffer_len, struct __message_t* out_sgmnt) {
     if (course_codes_buffer == NULL || out_sgmnt == NULL) {
         return ERR_INVALID_PARAMETERS;
     }

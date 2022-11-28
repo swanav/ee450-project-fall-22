@@ -216,7 +216,7 @@ err_t protocol_courses_lookup_detail_response_decode(const struct __message_t* i
  * 
  * @return err_t 
  */
-err_t protocol_courses_lookup_multiple_request_encode(const uint8_t course_count, const uint8_t* course_codes_buffer, const uint8_t course_codes_buffer_len, tcp_sgmnt_t* out_sgmnt);
+err_t protocol_courses_lookup_multiple_request_encode(const uint8_t course_count, const uint8_t* course_codes_buffer, const uint8_t course_codes_buffer_len, struct __message_t* out_sgmnt);
 
 typedef void (*single_course_code_handler_t)(const uint8_t idx, const char* course_code, const uint8_t course_code_len);
 

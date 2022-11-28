@@ -4,13 +4,16 @@
 #define CLIENT_MESSAGE_ON_BOOTUP "The client is up and running."
 #define CLIENT_MESSAGE_INPUT_USERNAME "Please enter the username: "
 #define CLIENT_MESSAGE_INPUT_PASSWORD "Please enter the password: "
+#define CLIENT_MESSAGE_USERNAME_OUT_OF_BOUNDS "Username length not within bounds (Expected: %d ~ %d characters)"
+#define CLIENT_MESSAGE_PASSWORD_OUT_OF_BOUNDS "Password length not within bounds (Expected: %d ~ %d characters)"
 #define CLIENT_MESSAGE_ON_AUTH_REQUEST "%.*s sent an authentication request to the main server."
 #define CLIENT_MESSAGE_ON_AUTH_RESULT "%.*s received the result of authentication using TCP over port %d."
 #define CLIENT_MESSAGE_ON_AUTH_RESULT_SUCCESS "Authentication is successful."
 #define CLIENT_MESSAGE_ON_AUTH_RESULT_FAILURE "Authentication failed."
 #define CLIENT_MESSAGE_ON_NETWORK_REQUEST_TIMEOUT "Request timed out."
 #define CLIENT_MESSAGE_ON_RESPONSE "The client received the response from Main server using TCP over port %d."
-
+#define CLIENT_MESSAGE_INPUT_COURSE_NAME "Please enter the course code to query: "
+#define CLIENT_MESSAGE_INPUT_LOOKUP_CATEGORY "Please enter the category (Credit / Professor / Days / Course Name): "
 
 #define SERVER_C_MESSAGE_ON_BOOTUP "The serverC is up and running using UDP on port %d."
 #define SERVER_C_MESSAGE_ON_BOOTUP_FAILURE "The serverC failed to start using UDP. Reason: %s."

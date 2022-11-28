@@ -23,9 +23,6 @@ tcp_server_t* tcp_server_start(uint16_t port) {
         } else {
             struct sockaddr_in server_addr = {0};
             SERVER_ADDR_PORT(server_addr, port);
-            // server_addr.sin_family = AF_INET;
-            // server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-            // server_addr.sin_port = htons(port);
 
             setsockopt(server->sd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 

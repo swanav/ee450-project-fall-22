@@ -5,7 +5,7 @@
 #include "protocol.h"
 #include "utils.h"
 
-void protocol_encode(struct __message_t* message, const uint8_t type, const uint8_t flags, const uint16_t payload_len, const uint8_t* payload) {
+static void protocol_encode(struct __message_t* message, const uint8_t type, const uint8_t flags, const uint16_t payload_len, const uint8_t* payload) {
     if (sizeof(message->data) >= payload_len + REQUEST_RESPONSE_HEADER_LEN) {
         message->data[REQUEST_RESPONSE_TYPE_OFFSET] = type;
         message->data[REQUEST_RESPONSE_FLAGS_OFFSET] = flags;
@@ -16,7 +16,7 @@ void protocol_encode(struct __message_t* message, const uint8_t type, const uint
     }
 }
 
-void protocol_decode(const struct __message_t* message, request_type_t* request_type, uint8_t* flags, uint16_t *out_data_len, const uint16_t out_data_size, uint8_t* out_data) {
+static void protocol_decode(const struct __message_t* message, request_type_t* request_type, uint8_t* flags, uint16_t *out_data_len, const uint16_t out_data_size, uint8_t* out_data) {
     if (request_type) {
         *request_type = protocol_get_request_type(message);
     }
@@ -342,8 +342,60 @@ err_t protocol_courses_lookup_multiple_request_decode(const udp_dgram_t* in_dgrm
     return ERR_OK;
 }
 
+static uint8_t course_details_encode(course_t* course, uint8_t* buffer, uint8_t buffer_size) {
+    uint8_t buffer_offset = 1;
+    uint8_t course_code_len = strlen(course->course_code);
+    uint8_t course_name_len = strlen(course->course_name);
+    uint8_t professor_len = strlen(course->professor);
+    uint8_t days_len = strlen(course->days);
+
+    memcpy(buffer + buffer_offset, &course_code_len, 1);
+    buffer_offset += 1;
+    memcpy(buffer + buffer_offset, course->course_code, course_code_len);
+    buffer_offset += course_code_len;
+
+    memcpy(buffer + buffer_offset, &course_name_len, 1);
+    buffer_offset += 1;
+    memcpy(buffer + buffer_offset, course->course_name, course_name_len);
+    buffer_offset += course_name_len;
+
+    memcpy(buffer + buffer_offset, &professor_len, 1);
+    buffer_offset += 1;
+    memcpy(buffer + buffer_offset, course->professor, professor_len);
+    buffer_offset += professor_len;
+
+    memcpy(buffer + buffer_offset, &days_len, 1);
+    buffer_offset += 1;
+    memcpy(buffer + buffer_offset, course->days, days_len);
+    buffer_offset += days_len;
+
+    memcpy(buffer + buffer_offset, &(course->credits), 1);
+    buffer_offset += 1;
+
+    buffer[0] = buffer_offset;
+    return buffer_offset;
+}
+
 err_t protocol_courses_lookup_multiple_response_encode(const course_t* courses, udp_dgram_t* out_dgrm) {
+    if (out_dgrm == NULL || courses == NULL) {
+        return ERR_INVALID_PARAMETERS;
+    }
+    
+    uint8_t buffer[1016];
+    uint16_t buffer_offset = 0;
+
+    course_t* course_ptr = (course_t*) courses;
+    uint8_t course_count = 0;
+    while(course_ptr) {
+        buffer_offset += course_details_encode(course_ptr, buffer + buffer_offset, sizeof(buffer) - buffer_offset);
+        course_count++;
+        course_ptr = course_ptr->next;
+    }
+
+    protocol_encode(out_dgrm, RESPONSE_TYPE_COURSES_MULTI_LOOKUP, course_count, buffer_offset, buffer);
+
     return ERR_OK;
+
 }
 
 static course_t* course_details_decode(uint8_t* buffer, uint8_t buffer_size, uint16_t* bytes_read) {

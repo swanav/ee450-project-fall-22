@@ -73,12 +73,6 @@ typedef struct __course_t {
     struct __course_t* next;
 } course_t;
 
-// Create UDP or TCP packet based on given buffer
-void protocol_encode(struct __message_t* message, const uint8_t type, const uint8_t flags, const uint16_t payload_len, const uint8_t* payload);
-
-// Recreate buffer from given UDP or TCP packet
-void protocol_decode(const struct __message_t* message, request_type_t* request_type, uint8_t* flags, uint16_t *out_data_len, const uint16_t out_data_size, uint8_t* out_data);
-
 request_type_t protocol_get_request_type(const struct __message_t* message);
 
 uint16_t protocol_get_payload_len(const struct __message_t* message);

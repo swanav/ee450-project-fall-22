@@ -99,7 +99,7 @@ void log_course(const void* course) {
 #if ENABLE_DEBUG_LOGS
 	static const char* TAG = "course";
 	const course_t* ptr = (const course_t*)course;
-    LOG_DBG("%s %s %s %s %d %p", ptr->course_code, ptr->course_name, ptr->professor, ptr->days, ptr->credits, ptr->next);
+    LOG_DBG("%s %s %s %s %d", ptr->course_code, ptr->course_name, ptr->professor, ptr->days, ptr->credits);
 #endif // ENABLE_DEBUG_LOGS
 }
 
@@ -164,7 +164,7 @@ void log_course_multi_lookup_result(const void* courses) {
 
     LOG_WARN("%*s: %*s | %*s | %*s | %*s", -1 * pad.course_code, "Course Code", -1 * pad.credits, "Credits", -1 * pad.professor, "Professor", -1 * pad.days, "Days", -1 * pad.course_name, "Course Name");
     while(ptr != NULL) {
-        LOG_INFO("%*s: %*d | %*s | %*s | %*s | %p %p", -1 * pad.course_code, ptr->course_code, -1 * pad.credits, ptr->credits, -1 * pad.professor, ptr->professor, -1 * pad.days, ptr->days, -1 * pad.course_name, ptr->course_name, ptr, ptr->next);
+        LOG_INFO("%*s: %*d | %*s | %*s | %*s", -1 * pad.course_code, ptr->course_code, -1 * pad.credits, ptr->credits, -1 * pad.professor, ptr->professor, -1 * pad.days, ptr->days, -1 * pad.course_name, ptr->course_name);
         ptr = ptr->next;
     }
 }

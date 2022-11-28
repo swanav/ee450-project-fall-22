@@ -143,7 +143,7 @@ void* multi_request_thread(void* params) {
     log_courses(multi_course_response);
 
     tcp_sgmnt_t sgmnt = {0};
-    courses_lookup_multiple_response_encode(&sgmnt, multi_course_response);
+    protocol_courses_lookup_multiple_response_encode(multi_course_response, &sgmnt);
     tcp_server_send(tcp, tcp->endpoints, &sgmnt);
 
     course_t* ptr = multi_course_response;

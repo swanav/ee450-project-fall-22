@@ -33,32 +33,40 @@ typedef struct __client_context_t {
     credentials_t creds;
 } client_context_t;
 
-err_t collect_credentials(credentials_t* user) {
-    LOG_WARN("Enter username: ");
+static err_t collect_credentials(credentials_t* user) {
+
+#ifndef CLIENT_TEST
+    char buffer[max(CREDENTIALS_MAX_USERNAME_LEN, CREDENTIALS_MAX_PASSWORD_LEN) + 1];
+#endif // CLIENT_TEST
+
+    printf("Enter username: ");
+    fflush(stdout);
 
 #ifdef CLIENT_TEST
     user->username_len = strlen("james");
     memcpy(user->username, "james", user->username_len);
     LOG_WARN("james\r\n");
 #else
-    if (scanf("%s", user->username)) {
-        getc(stdin);
+    if (fgets(buffer, sizeof(buffer), stdin)) {
+        memcpy(user->username, utils_string_rtrim_newlines(buffer), strlen(utils_string_rtrim_newlines(buffer))); 
         user->username_len = (uint8_t) strlen((char*) user->username);
     }
+
 #endif
     if (user->username_len < CREDENTIALS_MIN_USERNAME_LEN || user->username_len > CREDENTIALS_MAX_USERNAME_LEN) {
         LOG_ERR("Username length not within bounds (Expected: %d ~ %d characters)", CREDENTIALS_MIN_USERNAME_LEN, CREDENTIALS_MAX_USERNAME_LEN);
         return ERR_INVALID_PARAMETERS;
     }
 
-    LOG_WARN("Enter password: ");
+    printf("Enter password: ");
+    fflush(stdout);
 #ifdef CLIENT_TEST
     user->password_len = strlen("2kAnsa7s)");
     memcpy(user->password, "2kAnsa7s)", user->password_len);
     LOG_WARN("2kAnsa7s)\r\n");
 #else
-    if (scanf("%s", user->password)) {
-        getc(stdin);
+    if (fgets(buffer, sizeof(buffer), stdin)) {
+        memcpy(user->password, utils_string_rtrim_newlines(buffer), strlen(utils_string_rtrim_newlines(buffer))); 
         user->password_len = (uint8_t) strlen((char*) user->password);
     }
 #endif 
@@ -68,6 +76,25 @@ err_t collect_credentials(credentials_t* user) {
     }
 
     return ERR_OK;
+}
+
+static int collect_course_codes(uint8_t* course_code, uint8_t course_code_buffer_size) {
+#ifdef CLIENT_TEST
+    strncpy((char*) course_code, "EE604 CS100 EE450 CS310 EE608 CS561 EE658 CS435 EE520 CS356", course_code_buffer_size);
+#else
+    fgets((char*) course_code, course_code_buffer_size, stdin);
+#endif // CLIENT_TEST
+    return utils_get_word_count((char*) course_code);
+}
+
+static int new_request_prompt(uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {
+    LOG_WARN("Please enter the course code to query: ");
+    int courses_count = collect_course_codes(course_code_buffer, course_code_buffer_size);
+    if (courses_count == 1) {
+        LOG_WARN("Please enter the category (Credit / Professor / Days / CourseName): ");
+        fgets((char*) category_buffer, category_buffer_size, stdin);
+    }
+    return courses_count;
 }
 
 static void on_authentication_success(client_context_t* ctx, uint8_t* username, uint8_t username_len) {
@@ -120,25 +147,6 @@ static void on_setup_complete(client_context_t* ctx) {
     LOG_INFO(CLIENT_MESSAGE_ON_BOOTUP);
     ctx->client->user_data = ctx;
     sem_post(&ctx->semaphore);
-}
-
-static int collect_course_codes(uint8_t* course_code, uint8_t course_code_buffer_size) {
-#ifdef CLIENT_TEST
-    strncpy((char*) course_code, "CS100 EE450 EE608 CS435 EE520", course_code_buffer_size);
-#else
-    fgets((char*) course_code, course_code_buffer_size, stdin);
-#endif // CLIENT_TEST
-    return utils_get_word_count((char*) course_code);
-}
-
-static int new_request_prompt(uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {
-    LOG_WARN("Please enter the course code to query: ");
-    int courses_count = collect_course_codes(course_code_buffer, course_code_buffer_size);
-    if (courses_count == 1) {
-        LOG_WARN("Please enter the category (Credit / Professor / Days / CourseName): ");
-        fgets((char*) category_buffer, category_buffer_size, stdin);
-    }
-    return courses_count;
 }
 
 static void send_request(client_context_t* ctx, int courses_count, uint8_t* course_code_buffer, uint8_t course_code_buffer_size, uint8_t* category_buffer, uint8_t category_buffer_size) {

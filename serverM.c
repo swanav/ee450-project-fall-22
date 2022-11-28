@@ -257,7 +257,6 @@ int main() {
     }
 
     tcp = tcp_server_start(SERVER_M_TCP_PORT_NUMBER);
-    
     if (!tcp) {
         LOG_ERR(SERVER_M_MESSAGE_ON_BOOTUP_FAILURE, "Error starting TCP server");
         return 1;

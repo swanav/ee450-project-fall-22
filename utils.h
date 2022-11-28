@@ -38,6 +38,15 @@ char* utils_string_rtrim(char* s);
 char* utils_string_trim(char* s);
 
 /**
+ * @brief Trim newlines from the string
+ * 
+ * @param s Pointer to string with newlines
+ * 
+ * @return Pointer to trimmed string, NULL if s is NULL
+ */
+char* utils_string_rtrim_newlines(char* s);
+
+/**
  * @brief Count words in a string
  *
  * @param str Pointer to string

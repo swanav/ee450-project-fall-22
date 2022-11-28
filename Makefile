@@ -14,7 +14,7 @@ serverM: serverM.c out_dir
 			serverM.c courses.c credentials.c log.c protocol.c tcp.c udp.c utils.c \
 		-lpthread
 
-serverC: serverC.c  out_dir
+serverC: serverC.c out_dir
 	gcc -g -Wall \
 		-o $(OUTPUT_DIR)/serverC \
 			serverC.c credentials.c fileio.c log.c protocol.c udp.c utils.c
@@ -33,7 +33,7 @@ out_dir:
 	mkdir -p $(OUTPUT_DIR)
 
 bundle:
-	tar cvf ee450_Swaroop_Swanav_1349754053.tar *.[ch] Makefile
+	tar cvf ee450_Swaroop_Swanav_1349754053.tar *.[ch] Makefile README.md
 	gzip ee450_Swaroop_Swanav_1349754053.tar
 
 clean:

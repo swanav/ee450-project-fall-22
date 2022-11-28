@@ -27,6 +27,7 @@
 #define DEPARTMENT_DB_FILE_EE                       "ee.txt"
 
 #define AUTH_SUCCESS                                -1
+#define AUTH_MAX_ATTEMPTS                           3
 
 // Client Timeout for a response from the server
 #define TCP_QUERY_TIMEOUT_DELAY_S                   2

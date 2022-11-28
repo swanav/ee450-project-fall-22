@@ -162,7 +162,6 @@ P - PASSWORD_MISMATCH
 ```
 | Protocol Header | Course Code Length (X) | Course Code | Information Length (Y) | Information |
 | <   4 bytes   > | <       1 byte       > | < X bytes > | <       1 byte       > | < Y bytes > |
-
 ```
 `Type = RESPONSE_TYPE_COURSES_SINGLE_LOOKUP (0x72)`
 
@@ -187,32 +186,120 @@ P - PASSWORD_MISMATCH
 
 ---
 
-```c
-err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, const uint8_t course_code_len, struct __message_t* out_dgrm);
+***Course Detail Lookup Request***
 
-err_t protocol_courses_lookup_detail_request_decode(const struct __message_t* in_dgrm, uint8_t* course_code, uint8_t* course_code_len);
+```
+| Protocol Header | Course Code |
+| <   4 bytes   > | < X bytes > |
 ```
 
-```c
-err_t protocol_courses_lookup_detail_response_encode(const course_t* course, struct __message_t* out_dgrm);
+`Type = REQUEST_TYPE_COURSES_DETAIL_LOOKUP (0x64)`
 
-err_t protocol_courses_lookup_detail_response_decode(const struct __message_t* in_dgrm, course_t* course);
+`Flags = 0`
+
+`Length = X`
+
+`Course Code` contains the course code.
+
+---
+
+***Course Detail Lookup Response***
+
+```
+| Protocol Header | Course Code Len (A) | Course Code | Course Name Len (B) | Course Name | Professor Name Len (C) | Professor Name | Days Len (D) |    Days   | Credits Len (E) |   Credits   |
+| <   4 bytes   > | <      1 byte     > | < A bytes > | <      1 byte     > | < B bytes > | <       1 byte       > | <   C bytes  > | <  1 byte  > |< D bytes >| <    1 byte   > | < E bytes > |
 ```
 
-```c
-err_t protocol_courses_lookup_multiple_request_encode(const uint8_t course_count, const uint8_t* course_codes_buffer, const uint8_t course_codes_buffer_len, struct __message_t* out_sgmnt);
+`Type = RESPONSE_TYPE_COURSES_DETAIL_LOOKUP (0x74)`
 
-typedef void (*single_course_code_handler_t)(const uint8_t idx, const char* course_code, const uint8_t course_code_len);
+`Flags = 0`
 
-err_t protocol_courses_lookup_multiple_request_decode(const struct __message_t* in_dgrm, uint8_t* course_count, single_course_code_handler_t handler);
+`Length = 5 + A + B + C + D + E`
+
+`Course Code Len (A)` contains the length of the course code.
+
+`Course Code` contains the course code.
+
+`Course Name Len (B)` contains the length of the course name.
+
+`Course Name` contains the course name.
+
+`Professor Name Len (C)` contains the length of the professor name.
+
+`Professor Name` contains the professor name.
+
+`Days Len (D)` contains the length of the days.
+
+`Days` contains the days.
+
+`Credits Len (E)` contains the length of the credits.
+
+`Credits` contains the credits.
+
+---
+
+***Course Multi Lookup Request***
+
+```
+| Protocol Header | Course Count | Course1 Len (A) | Course1 Name | Course 2 Len (B) | Course 2 Name | ... | Course N Len (N) | Course N Name |
+| <   4 bytes   > | <  1 byte  > | <    1 byte   > | <  A bytes > | <    1 byte    > | <  B bytes  > | ... | <    1 byte    > |<   N bytes   >|
 ```
 
-```c
-err_t protocol_courses_lookup_multiple_response_encode(const course_t* courses, struct __message_t* out_dgrm);
-err_t protocol_courses_lookup_multiple_response_decode(const struct __message_t* in_dgrm, course_t** courses);
+`Type = REQUEST_TYPE_COURSES_MULTI_LOOKUP (0x63)`
 
-void protocol_courses_lookup_multiple_response_decode_dealloc(course_t* course);
+`Flags = 0`
+
+`Length = 1 + N + Sum(A, B, ..., N)`
+
+`Course Count` contains the number of courses.
+
+`Course1 Len (A)` contains the length of the first course.
+
+`Course1 Name` contains the first course.
+
+`Course 2 Len (B)` contains the length of the second course.
+
+`Course 2 Name` contains the second course.
+
+...
+
+`Course N Len (N)` contains the length of the Nth course.
+
+`Course N Name` contains the Nth course.
+
+---
+
+***Course Multi Lookup Response***
+
 ```
+                  | <  ..  ..  ..  ..  ..  ..  ..  ..  ..  .. Repeating ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  > |
+| Protocol Header |  Course Details Len (A) | Field Len (A1) |  Field Value | ... | Field Len (An) |  Field Value | ...... | 
+| <   4 bytes   > |  <       1 byte       > | <   1 byte   > | < A1 bytes > | ... | <   1 byte   > | < An bytes > | ...... | 
+```
+
+`Type = RESPONSE_TYPE_COURSES_MULTI_LOOKUP (0x73)`
+
+`Flags = Course Count (X)`
+
+`Length = Sum((1 + N + Sum(A1, A2, ..., An))...(1 + N + Sum(X1, X2, ..., Xn)))`
+
+> ***Repeating block***
+>
+> `Course Details Len (A)` contains the length of the course details.
+> 
+> `Field Len (A1)` contains the length of the first field.
+> 
+> `Field Value` contains the first field.
+> 
+> ...
+> 
+> `Field Len (An)` contains the length of the nth field.
+> 
+> `Field Value` contains the nth field.
+> 
+> ***End repeating block***
+
+``
 
 ---
 
@@ -225,7 +312,7 @@ void protocol_courses_lookup_multiple_response_decode_dealloc(course_t* course);
 
 `Type = RESPONSE_TYPE_COURSES_ERROR (0x75)`
 
-`Flags = Error Code` (Listed in error.h)
+`Flags = Error Code` (Listed in `error.h`)
 
 `Length = 0`
 

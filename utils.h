@@ -1,12 +1,14 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+#include "constants.h"
+
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
 #define SERVER_ADDR_PORT(addr, port) do { \
     addr.sin_family = AF_INET; \
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); \
+    addr.sin_addr.s_addr = htonl(LOCALHOST); \
     addr.sin_port = htons(port); \
 } while (0)
 

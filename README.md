@@ -132,19 +132,60 @@ P - PASSWORD_MISMATCH
 
 ---
 
+***Single Course Lookup Request***
 
-
-```c
-err_t protocol_courses_lookup_single_request_encode(const char* course_code, const uint8_t course_code_len, const courses_lookup_category_t category, struct __message_t* out_dgrm);
-
-err_t protocol_courses_lookup_single_request_decode(const struct __message_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category);
 ```
+| Protocol Header | Payload (X) |
+| <   4 bytes   > | < X bytes > |
+```
+
+`Type = REQUEST_TYPE_COURSES_SINGLE_LOOKUP (0x62)`
+
+`Flags`
+```
+0x50 - Course Code
+0x51 - Credits
+0x52 - Professor    
+0x53 - Days
+0x54 - Course Name    
+0x55 - Invalid
+```
+
+`Length = X`
+
+`Payload = Course Code (X Bytes)`
+
 ---
-```c
-err_t protocol_courses_lookup_single_response_encode(const char* course_code, const uint8_t course_code_len, const courses_lookup_category_t category, const uint8_t* information, const uint8_t information_len, struct __message_t* out_dgrm);
 
-err_t protocol_courses_lookup_single_response_decode(const struct __message_t* in_dgrm, char* course_code, uint8_t* course_code_len, courses_lookup_category_t* category, uint8_t* information, uint8_t* information_len);
+***Single Course Lookup Response***
+
 ```
+| Protocol Header | Course Code Length (X) | Course Code | Information Length (Y) | Information |
+| <   4 bytes   > | <       1 byte       > | < X bytes > | <       1 byte       > | < Y bytes > |
+
+```
+`Type = RESPONSE_TYPE_COURSES_SINGLE_LOOKUP (0x72)`
+
+`Flags`
+```
+0x50 - Course Code
+0x51 - Credits
+0x52 - Professor    
+0x53 - Days
+0x54 - Course Name    
+0x55 - Invalid
+```
+`Length = 2 + X + Y`
+
+`Course Code Length (X)` contains the length of the course code.
+
+`Course Code` contains the course code.
+
+`Information Length (Y)` contains the length of the information.
+
+`Information` contains the information.
+
+---
 
 ```c
 err_t protocol_courses_lookup_detail_request_encode(const uint8_t* course_code, const uint8_t course_code_len, struct __message_t* out_dgrm);

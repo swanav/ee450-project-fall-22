@@ -326,16 +326,24 @@ P - PASSWORD_MISMATCH
 `Error Data` contains the error data.
 
 -----
+
 -----
+
 ***Any idiosyncrasy of your project. It should say under what conditions the project fails, if any.***
 
-1. This code does not handle the possibility of multiple clients to serverM properly. Although, serverM will be able to accept multiple connections, it will be able to exchange messages with the most recent client at a time. 
+1. This code does not handle the possibility of multiple clients to serverM properly. Although, serverM will be able to accept multiple connections, it will be able to exchange messages with the most recent client at a time.
+
 2. This code also does not serve two queries at the same time. If a client sends a query, it will be served, and only then will a client be able to send another query.
 
+3. The department servers are determined using the first 2 characters of the course code. Invalid inputs such as spaces before the course code will not be handled.
+
 -----
+
+### References
+
 ***Reused Code: Did you use code from anywhere for your project? If not, say so. If so, say what functions and where they're from. (Also identify this with a comment in the source code.)***
 
-The code takes inspirations from the socket programming guide at [beej.us](https://beej.us/guide/bgnet/html/). Although, none of the snippets have been copied directly. 
+The code takes inspirations from the socket programming guide at [beej.us](https://beej.us/guide/bgnet/html/). Although, none of the snippets have been copied directly.
 
 Also some of the utility functions for string manipulation and csv handling are implemented after taking reference from Stack Overflow.
 

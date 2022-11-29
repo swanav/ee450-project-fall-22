@@ -93,6 +93,7 @@ char* database_courses_category_string_from_enum(courses_lookup_category_t categ
 #endif // CLIENT || SERVER_M || SERVER_CS || SERVER_EE
 
 #if defined(SERVER_M)
+// Inspired from https://stackoverflow.com/questions/5224990/shift-a-letter-down-the-alphabet
 static uint8_t shift_char(uint8_t c, int shift) {
     if (c >= 'A' && c <= 'Z') {
         c = (c - 'A' + shift) % 26 + 'A';

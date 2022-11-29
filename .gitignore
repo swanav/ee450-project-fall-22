@@ -6,3 +6,13 @@
 out/**
 
 __pycache__/
+
+ee450_*/**
+
+client
+serverC
+serverCS
+serverEE
+serverM
+
+*.tar.gz

@@ -34,6 +34,8 @@ course_t* multi_course_response = NULL;
 static pthread_t thread;
 static sem_t semaphore;
 
+static void on_course_lookup_error_received(udp_dgram_t *req_dgram);
+
 /* ======================================== Authentication ============================================= */
 
 static void set_username(char* username, uint8_t username_len) {
@@ -107,7 +109,9 @@ static void send_request_to_department_server(udp_dgram_t* dgram, const char* co
         } else {
             // Send an error response to the client
             LOG_WARN("Invalid course code: %.*s", course_code_len, course_code);
-            sem_post(&semaphore);
+            protocol_courses_error_encode(ERR_COURSES_NOT_FOUND, (uint8_t*) course_code, course_code_len, dgram);
+            on_course_lookup_error_received(dgram);
+            // sem_post(&semaphore);
         }
 }
 

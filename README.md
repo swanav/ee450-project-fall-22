@@ -14,7 +14,11 @@
 3. Implemented a frontend server, `serverM` which talks to the backend servers mentioned above over **UDP** and interfaces with the client application over **TCP**. Handles authentication and course information lookup requests. It also aggregates course lookup requests for multiple requests to respond to a bulk query.
 4. Implements a `client`, which talks to the frontend server, `serverM` and provides the user an interface to authenticate themselves and request information regarding courses.
 
-> This implementation contains extensive use of function pointers and macros to reduce code duplication and increase readability. Socket functionalities (TCP and UDP) have been carefully encapsulated in a separate `networking.h` file. The servers and the client reuse the same codebase to communicate over TCP and UDP. Please note that it is only the code that is being reused. The applications themselves do not share any runtime and operate in complete isolation. Where possible, the code employs macro guards to make it easy to understand which functions are accessible to which applications.
+> This implementation contains extensive use of function pointers and macros to reduce code duplication and increase readability. Socket functionalities (TCP and UDP) have been carefully encapsulated in separate `networking.[ch]` files. The servers and the client reuse the same codebase to communicate over TCP and UDP. Please note that in accordance to the project guidelines, it is ***only the code that is being reused***. The applications themselves do not share any runtime and operate in ***complete isolation***. Where possible, the code employs macro guards to make it easy to understand which functions are accessible to which applications.
+
+> Similarly, since the `serverCS` and `serverEE` provide the same functionality to the user. `department_server.[ch]` implements the core functionality and both the department servers are implemented as wrappers around it. This allows for easy addition of new departments in the future without code duplication.
+
+> I had started this implementation to serve multiple clients at the same time, but didn't after clarifications received on class forum and time constraints. The codebase is structured to support this feature in the future with minimal changes.
 
 -----
 ***What your code files are and what each one of them does. (Please do not repeat the project description, just name your code files and briefly mention what they do).***

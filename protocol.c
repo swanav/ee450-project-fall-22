@@ -4,7 +4,7 @@
 #include "log.h"
 #include "protocol.h"
 #include "utils.h"
-
+#include "stdio.h"
 
 static uint16_t protocol_get_payload_len(const struct __message_t* message) {
     return message->data_len < REQUEST_RESPONSE_HEADER_LEN ? REQUEST_RESPONSE_INVALID_TYPE : message->data[REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET_1] | (message->data[REQUEST_RESPONSE_PAYLOAD_LEN_OFFSET_2] << 8);
@@ -472,20 +472,24 @@ void protocol_courses_lookup_multiple_response_decode_dealloc(course_t* course) 
     }
 }
 
-err_t protocol_courses_error_encode(const err_t error_code, struct __message_t* out_dgrm) {
-    protocol_encode(out_dgrm, RESPONSE_TYPE_COURSES_ERROR, error_code, 0, NULL);
+err_t protocol_courses_error_encode(const err_t error_code, uint8_t* data, uint8_t data_len, struct __message_t* out_dgrm) {
+    protocol_encode(out_dgrm, RESPONSE_TYPE_COURSES_ERROR, error_code, data_len, data);
     return ERR_OK;
 }
-
-err_t protocol_courses_error_decode(const struct __message_t* in_dgrm, err_t* error_code) {
+err_t protocol_courses_error_decode(const struct __message_t* in_dgrm, err_t* error_code, uint8_t* data, uint8_t* data_len) {
     if (in_dgrm == NULL || error_code == NULL) {
         return ERR_INVALID_PARAMETERS;
     }
 
-    if (protocol_get_flags(in_dgrm) != RESPONSE_TYPE_COURSES_ERROR) {
+    if (protocol_get_request_type(in_dgrm) != RESPONSE_TYPE_COURSES_ERROR) {
         return ERR_INVALID_PARAMETERS;
     }
 
-    protocol_decode(in_dgrm, NULL, error_code, NULL, 0, NULL);
+    uint16_t size = data_len ? *data_len : 0;
+    uint16_t olen = 0;
+    protocol_decode(in_dgrm, NULL, error_code, &olen, size, data);
+    if (data_len) {
+        *data_len = olen;
+    }
     return ERR_OK;
 }

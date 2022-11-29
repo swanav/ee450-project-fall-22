@@ -20,7 +20,7 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
     // Get the course code and category from the request
     if (protocol_courses_lookup_single_request_decode(req_dgram, course_code, &size, &category) != ERR_OK) {
         // Failed to parse the request
-        protocol_courses_error_encode(ERR_REQ_INVALID, resp_dgram);
+        protocol_courses_error_encode(ERR_REQ_INVALID, (uint8_t*) course_code, strlen(course_code), resp_dgram);
     } else {
         LOG_INFO(SERVER_SUB_MESSAGE_ON_LOOKUP_REQUEST_RECEIVED, subject_code, database_courses_category_string_from_enum(category), course_code);
         uint8_t info[128] = {0};
@@ -30,11 +30,11 @@ static void handle_course_info_lookup_request(udp_dgram_t* req_dgram, udp_dgram_
         if (!course) {
             // Course not found
             LOG_WARN(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, course_code);
-            protocol_courses_error_encode(ERR_COURSES_NOT_FOUND, resp_dgram);
+            protocol_courses_error_encode(ERR_COURSES_NOT_FOUND, (uint8_t*) course_code, strlen(course_code), resp_dgram);
         } else if (category >= COURSES_LOOKUP_CATEGORY_INVALID) {
             // Invalid category
             LOG_WARN("Invalid category for lookup: %s", category);
-            protocol_courses_error_encode(ERR_REQ_INVALID, resp_dgram);
+            protocol_courses_error_encode(ERR_REQ_INVALID, (uint8_t*) course_code, strlen(course_code), resp_dgram);
         } else {
             LOG_DBG("Course found: %s", course->course_code);
             // Get the course info
@@ -53,7 +53,7 @@ static void handle_course_detail_lookup_request(udp_dgram_t* req_dgram, udp_dgra
     // Decode the request
     if (protocol_courses_lookup_detail_request_decode(req_dgram, course_code, &size) != ERR_OK) {
         // If the request is invalid, send an error response
-        protocol_courses_error_encode(ERR_REQ_INVALID, resp_dgram);
+        protocol_courses_error_encode(ERR_REQ_INVALID, course_code, strlen((char*) course_code), resp_dgram);
     } else {
         LOG_INFO(SERVER_SUB_MESSAGE_ON_SUMMARY_REQUEST_RECEIVED, subject_code, course_code);
         // If the request is valid, lookup the course
@@ -61,7 +61,7 @@ static void handle_course_detail_lookup_request(udp_dgram_t* req_dgram, udp_dgra
         if (!course) {
             LOG_WARN(SERVER_SUB_MESSAGE_ON_COURSE_NOT_FOUND, course_code);
             // If the course is not found, send an error response
-            protocol_courses_error_encode(ERR_COURSES_NOT_FOUND, resp_dgram);
+            protocol_courses_error_encode(ERR_COURSES_NOT_FOUND, course_code, strlen((char*) course_code), resp_dgram);
         } else {
             // If the course is found, send a response with the course details
             protocol_courses_lookup_detail_response_encode(course, resp_dgram);
@@ -81,7 +81,7 @@ static void udp_message_rx_handler(udp_ctx_t* udp, udp_endpoint_t* src, udp_dgra
     } else {
         // Handle invalid request
         LOG_WARN(SERVER_SUB_MESSAGE_ON_REQUEST_INVALID, subject_code);
-        protocol_courses_error_encode(ERR_REQ_INVALID, &resp_dgram);
+        protocol_courses_error_encode(ERR_REQ_INVALID, NULL, 0, &resp_dgram);
     }
 
     // Send response

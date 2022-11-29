@@ -268,7 +268,7 @@ void protocol_courses_lookup_multiple_response_decode_dealloc(course_t* course);
  * 
  * @return err_t 
  */
-err_t protocol_courses_error_encode(const err_t error_code, struct __message_t* out_dgrm);
+err_t protocol_courses_error_encode(const err_t error_code, uint8_t* data, uint8_t data_len, struct __message_t* out_dgrm);
 
 /**
  * @brief Decode a course lookup error
@@ -276,6 +276,6 @@ err_t protocol_courses_error_encode(const err_t error_code, struct __message_t* 
  * @param in_dgrm [in] The datagram to decode
  * @param error_code [out] The error code
  */
-err_t protocol_courses_error_decode(const struct __message_t* in_dgrm, err_t* error_code);
+err_t protocol_courses_error_decode(const struct __message_t* in_dgrm, err_t* error_code, uint8_t* data, uint8_t* data_len);
 
 #endif // PROTOCOL_H

@@ -118,18 +118,18 @@ static void on_authentication_failure(client_context_t* ctx, uint8_t* username, 
     // Authentication failed. Inform user of reason
     LOG_ERR(CLIENT_MESSAGE_ON_AUTH_RESULT_FAILURE);
     if (AUTH_MASK_USER_NOT_FOUND(flags)) {
-        LOG_ERR("User not found");
+        LOG_ERR("Username does not exist");
     } else if (AUTH_MASK_PASSWORD_MISMATCH(flags)) {
-        LOG_ERR("Password mismatch");
+        LOG_ERR("Password does not match");
     }
 
     // Increment failure count and exit if max attempts reached.
     if (++ctx->auth_failure_count == AUTH_MAX_ATTEMPTS) {
-        LOG_ERR("Maximum attempts reached. Closing client.");
+        LOG_ERR("Authentication Failed for %d attempts. Client will shut down.", AUTH_MAX_ATTEMPTS);
         exit(1);
     } else {
         // Warn user of remaining attempts
-        LOG_WARN("Please try again... %d attempts remaining", AUTH_MAX_ATTEMPTS - ctx->auth_failure_count);
+        LOG_WARN("Attempts remaining: %d", AUTH_MAX_ATTEMPTS - ctx->auth_failure_count);
     }
 }
 
@@ -186,7 +186,13 @@ static void send_request(client_context_t* ctx, int courses_count, uint8_t* cour
         protocol_courses_lookup_multiple_request_encode(courses_count, course_code_buffer, course_code_buffer_size, &sgmnt);
     }
     // Send the request.
-    tcp_client_send(ctx->client, &sgmnt);
+    if (tcp_client_send(ctx->client, &sgmnt) == ERR_OK) {
+        if (courses_count == 1) {
+            LOG_INFO("%.*s sent a request to the main server.", ctx->creds.username_len, ctx->creds.username);
+        } else {
+            LOG_INFO("%.*s sent a request with multiple CourseCode to the main server", ctx->creds.username_len, ctx->creds.username);
+        }
+    }
 }
 
 static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
@@ -203,6 +209,7 @@ static void on_course_lookup_info(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
         LOG_ERR("Failed to decode course lookup info.");
     } else if (category == COURSES_LOOKUP_CATEGORY_INVALID) {
         LOG_ERR("Invalid query.");
+        // TODO: Course Not found.
     } else {
         // Print the course lookup info.
         LOG_INFO("The %s of %s is %.*s", database_courses_category_string_from_enum(category), course_code, information_len, information);
@@ -230,6 +237,22 @@ static err_t create_timeout(struct timespec* ts, time_t sec, time_t nsec) {
     ts->tv_sec += sec;
     ts->tv_nsec += nsec;
     return ERR_OK;
+}
+
+static void on_course_lookup_error(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
+    err_t error_code = ERR_OK;
+    uint8_t buffer[20] = {0};
+    uint8_t buffer_len = sizeof(buffer);
+
+    if (protocol_courses_error_decode(sgmnt, &error_code, buffer, &buffer_len) == ERR_OK) {
+        if (error_code == ERR_COURSES_NOT_FOUND) {
+            LOG_WARN("Didn't find the course: %.*s", buffer_len, (char*) buffer);
+        } else {
+            LOG_ERR("Unknown error code: %d", error_code);
+        }
+    } else {
+        LOG_ERR("Failed to decode %d", protocol_courses_error_decode(sgmnt, &error_code, buffer, &buffer_len));
+    }
 }
 
 static void* user_input_task(void* params) {
@@ -301,6 +324,10 @@ static void on_receive(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
         case RESPONSE_TYPE_COURSES_MULTI_LOOKUP:
             // On course multi lookup response
             on_course_multi_lookup(ctx, sgmnt);
+            break;
+        case RESPONSE_TYPE_COURSES_ERROR:
+            // On course lookup error
+            on_course_lookup_error(ctx, sgmnt);
             break;
         default:
             LOG_ERR("Unknown segment type. %d", response_type);

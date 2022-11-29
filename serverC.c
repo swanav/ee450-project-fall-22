@@ -29,7 +29,8 @@ static void handle_auth_request_validate(const udp_dgram_t* req_dgram, udp_dgram
     if (protocol_authentication_request_decode(req_dgram, &credentials) != ERR_OK) {
         LOG_ERR("Failed to parse authentication request");
     } else {
-        LOG_INFO(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED_FOR_USER, credentials.username_len, credentials.username);
+        LOG_INFO(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
+        LOG_DBG(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED_FOR_USER, credentials.username_len, credentials.username);
         // Check if the username and password are valid
         err_t auth_status = database_credentials_validate(credentials_db, &credentials);
         // Set the flags based on the authentication status
@@ -56,11 +57,10 @@ static void udp_message_rx_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_d
     request_type_t req_type = protocol_get_request_type(req_dgram);
     if (req_type == REQUEST_TYPE_AUTH) {
         // Handle authentication request
-        LOG_INFO(SERVER_C_MESSAGE_ON_AUTH_REQUEST_RECEIVED);
         handle_auth_request_validate(req_dgram, &resp_dgram);
     } else {
         // Invalid request
-        LOG_INFO(SERVER_C_MESSAGE_ON_INVALID_REQUEST_RECEIVED);
+        LOG_WARN(SERVER_C_MESSAGE_ON_INVALID_REQUEST_RECEIVED);
         // Encode an error message response to the user
         protocol_authentication_response_encode(AUTH_FLAGS_FAILURE, &resp_dgram);
     }

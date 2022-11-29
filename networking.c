@@ -17,6 +17,7 @@ tcp_server_t* tcp_server_start(uint16_t port) {
     if (server == NULL) {
         LOG_ERR("Failed to allocate memory for tcp_server_t");
     } else {
+        // Create a socket
         server->sd = socket(AF_INET, SOCK_STREAM, 0);
         if (server->sd < 0) {
             LOG_ERR("Failed to create socket. Error: %s.", strerror(errno));
@@ -25,8 +26,10 @@ tcp_server_t* tcp_server_start(uint16_t port) {
             struct sockaddr_in server_addr = {0};
             SERVER_ADDR_PORT(server_addr, port);
 
+            // Use the SO_REUSEADDR option to allow the server to restart immediately after it is killed
             setsockopt(server->sd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
+            // Bind the socket to the port
             if (bind(server->sd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
                 LOG_ERR("Failed to bind socket. Error: %s.", strerror(errno));
                 free(server);
@@ -75,6 +78,7 @@ static void create_child_socket(tcp_server_t* server, int child_sd) {
         server->endpoints = endpoint;
         endpoint->addr = (struct sockaddr_in) {0};
         socklen_t addr_len = sizeof(endpoint->addr);
+        // Get the address of the client
         if (getpeername(child_sd, (struct sockaddr*) &endpoint->addr, &addr_len) < 0) {
             LOG_ERR("Failed to get peer name. Error: %s.", strerror(errno));
         } else {
@@ -95,6 +99,7 @@ void tcp_server_accept(tcp_server_t* server) {
         if ((new_sd = accept(server->sd, NULL, NULL)) < 0) {
             LOG_ERR("Failed to accept connection. Error: %s.", strerror(errno));
         } else {
+            // Create a new child socket
             LOG_DBG("Accepted connection on socket %d", new_sd);
             create_child_socket(server, new_sd);
         }
@@ -150,8 +155,10 @@ void tcp_server_tick(tcp_server_t* server) {
             for (int sd = server->sd; sd <= server->max_sd; sd++) {
                 if (FD_ISSET(sd, &read_fds)) {
                     if (sd == server->sd) {
+                        // New connection
                         tcp_server_accept(server);
                     } else {
+                        // Receive data
                         tcp_server_receive(server, sd);
                     }
                 }
@@ -164,6 +171,7 @@ void tcp_server_tick(tcp_server_t* server) {
 void tcp_server_send(tcp_server_t* server, tcp_endpoint_t* dst, tcp_sgmnt_t* segment) {
     if (server != NULL && dst != NULL && segment != NULL) {
         LOG_DBG("Sending TCP Segment to "IP_ADDR_FORMAT" %.*s", IP_ADDR(dst), (int) segment->data_len, segment->data);
+        // Send data to the client
         size_t bytes_sent = sendto(dst->sd, segment->data, segment->data_len, 0, (struct sockaddr*) &dst->addr, sizeof(struct sockaddr));
         if (bytes_sent < 0) {
             LOG_ERR("Failed to send TCP Segment. Error: %s.", strerror(errno));
@@ -184,6 +192,7 @@ tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_
 
     client->server = dest;
 
+    // Create a new socket
     client->sd = socket(AF_INET, SOCK_STREAM, 0);
     if (client->sd < 0) {
         LOG_ERR("tcp_client_connect: Error creating socket");
@@ -191,6 +200,7 @@ tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_
         return NULL;
     }
 
+    // Connect to TCP server
     if (connect(client->sd, (struct sockaddr*)&dest->addr, sizeof(struct sockaddr)) < 0) {
         LOG_ERR("tcp_client_connect: Error connecting to server");
         free(client);
@@ -200,9 +210,11 @@ tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_
     struct sockaddr_in addr = {0};
     socklen_t addr_len = sizeof(addr);
 
+    // Get the dynamically allocated local address of the socket
     if (getsockname(client->sd, (struct sockaddr*)&addr, &addr_len) < 0) {
         LOG_ERR("tcp_client_connect: Failed to get socket name");
     } else {
+        // Save the port number
         client->port = ntohs(addr.sin_port);
         LOG_DBG("Locally bound to port %d", client->port);
     }
@@ -215,13 +227,16 @@ tcp_client_t* tcp_client_connect(tcp_endpoint_t* dest, tcp_receive_handler_t on_
 
 void tcp_client_disconnect(tcp_client_t* client) {
     if (client) {
+        // Close the socket
         close(client->sd);
+        // Free the client
         free(client);
     }
 }
 
 err_t tcp_client_send(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
     if (client) {
+        // Send data to server
         if (send(client->sd, sgmnt->data, sgmnt->data_len, 0) == sgmnt->data_len) {
             LOG_DBG("Sending TCP Segment (%ld bytes) to server", sgmnt->data_len);
             return ERR_OK;
@@ -232,7 +247,8 @@ err_t tcp_client_send(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
 
 void tcp_client_receive(tcp_client_t* client) {
     if (client) {
-        tcp_sgmnt_t sgmnt;
+        tcp_sgmnt_t sgmnt = {0};
+        // Read data from socket into buffer
         size_t bytes_read = recv(client->sd, sgmnt.data, sizeof(sgmnt.data), 0);
         if (bytes_read > 0) {
             sgmnt.data_len = bytes_read;
@@ -257,6 +273,7 @@ udp_ctx_t* udp_start(uint16_t port) {
         LOG_ERR("Failed to allocate memory for udp_server_t");
     } else {
         udp->port = port;
+        // Create a socket
         udp->sd = socket(AF_INET, SOCK_DGRAM, 0);
         if (udp->sd < 0) {
             LOG_WARN("Failed to create socket on port %d. Error: %s.", port, strerror(errno));
@@ -265,6 +282,7 @@ udp_ctx_t* udp_start(uint16_t port) {
         } else {
             struct sockaddr_in server_addr;
             SERVER_ADDR_PORT(server_addr, port);
+            // Bind the socket to a static port
             if (bind(udp->sd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
                 LOG_WARN("Failed to bind socket to port %d. Error: %s.", port, strerror(errno));
                 free(udp);
@@ -280,23 +298,26 @@ udp_ctx_t* udp_start(uint16_t port) {
 
 void udp_stop(udp_ctx_t* udp) {
     if (udp != NULL) {
+        // Close the socket
         close(udp->sd);
+        // Free the server
         free(udp);
     }
 }
 
 void udp_receive(udp_ctx_t* udp) {
     if (udp != NULL) {
-        // LOG_DBG("Waiting for a UDP Datagram");
+
         udp_endpoint_t src = {0};
         udp_dgram_t dgram = {0};
         socklen_t addr_len = sizeof(struct sockaddr);
 
+        LOG_DBG("Waiting for a UDP Datagram");
         dgram.data_len = recvfrom(udp->sd, dgram.data, sizeof(dgram.data), 0, (struct sockaddr*) &src.addr, &addr_len);
         if (dgram.data_len < 0) {
             LOG_ERR("Failed to receive UDP Datagram. Error: %s.", strerror(errno));
         } else {
-            LOG_DBG("Received UDP Datagram (%ld bytes) from %s:%d", dgram.data_len, inet_ntoa(src.addr.sin_addr), ntohs(src.addr.sin_port));
+            LOG_DBG("Received UDP Datagram (%ld bytes) from " IP_ADDR_FORMAT, dgram.data_len, IP_ADDR((&src)));
             if (udp->on_rx) {
                 udp->on_rx(udp, &src, &dgram);
             }

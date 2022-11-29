@@ -36,6 +36,14 @@ static sem_t semaphore;
 
 /* ======================================== Authentication ============================================= */
 
+static void set_username(char* username, uint8_t username_len) {
+    strncpy(tcp->username, username, min(username_len, CREDENTIALS_MAX_USERNAME_LEN));
+}
+
+static void clear_username() {
+    memset(tcp->username, 0, CREDENTIALS_MAX_USERNAME_LEN);
+}
+
 static void authenticate_user(credentials_t* user) {
     if (udp) {
         udp_dgram_t dgram = {0};
@@ -48,7 +56,7 @@ static void authenticate_user(credentials_t* user) {
                 // Send the request to the authentication server
                 udp_send(udp, &serverC, &dgram);
                 LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_FORWARDED);
-            } 
+            }
         }
     }
 }
@@ -58,6 +66,8 @@ static void on_auth_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp
     // Decode the authentication request
     if (protocol_authentication_request_decode(sgmnt, &credentials) == ERR_OK) {
         LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_REQUEST_RECEIVED, credentials.username, ntohs(src->addr.sin_port));
+        // Store the username of the authenticating user.
+        set_username((char*) credentials.username, credentials.username_len);
         // Authenticate the user
         authenticate_user(&credentials);
     }
@@ -65,6 +75,12 @@ static void on_auth_request_received(tcp_server_t* tcp, tcp_endpoint_t* src, tcp
 
 static void on_auth_response_received(udp_dgram_t* req_dgram) {
     // Response received for authentication result. Forward to client.
+    uint8_t auth_result = AUTH_SUCCESS;
+    protocol_authentication_response_decode(req_dgram, &auth_result);
+    if (AUTH_MASK_FAILURE(auth_result)) {
+        // Clear the username if the user failed to authenticate
+        clear_username();
+    }
     tcp_server_send(tcp, tcp->endpoints, req_dgram);
     LOG_INFO(SERVER_M_MESSAGE_ON_AUTH_RESULT_FORWARDED);
 }
@@ -124,7 +140,7 @@ static void on_course_lookup_info_request_received(tcp_server_t* tcp, tcp_endpoi
 
     // Decode Single Course Lookup Request
     if (protocol_courses_lookup_single_request_decode(req_sgmnt, course_code, &size, &category) == ERR_OK) {
-        LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, "\"user\"", course_code, database_courses_category_string_from_enum(category), ntohs(src->addr.sin_port));
+        LOG_INFO(SERVER_M_MESSAGE_ON_QUERY_RECEIVED, tcp->username, course_code, database_courses_category_string_from_enum(category), ntohs(src->addr.sin_port));
         // Send Single Course Lookup Request to Department Server
         request_course_category_information(course_code, size, category);
     } else {
@@ -183,6 +199,7 @@ static void* multi_request_thread(void* params) {
     course_t* ptr = multi_course_response;
     drop_linked_list(ptr);
     multi_course_response = NULL;
+    thread = (pthread_t) NULL;
 
     return NULL;
 }
@@ -197,6 +214,20 @@ static void on_single_course_lookup_info_response_received(udp_dgram_t* req_dgra
     // Forward the single course lookup response to the client
     tcp_server_send(tcp, tcp->endpoints, req_dgram);
     LOG_INFO(SERVER_M_MESSAGE_ON_RESULT_FORWARDED);
+}
+
+static void on_course_lookup_error_received(udp_dgram_t* req_dgram) {
+    // On course lookup error response from department server
+    err_t error_code = ERR_OK;
+    protocol_courses_error_decode(req_dgram, &error_code, NULL, NULL);
+    LOG_WARN("Received course lookup error (%d).", error_code);
+    if (!thread) {
+        // This is a single course query. Send the response.
+        tcp_server_send(tcp, tcp->endpoints, req_dgram);
+    } else {
+        // This is a multi course query. Signal the thread to continue.
+        sem_post(&semaphore);
+    }
 }
 
 static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t* req_dgram) {
@@ -220,6 +251,8 @@ static void on_udp_server_rx(udp_ctx_t* udp, udp_endpoint_t* source, udp_dgram_t
         }
         // Signal semaphore to place next request
         sem_post(&semaphore);
+    } else if (response_type == RESPONSE_TYPE_COURSES_ERROR) {
+        on_course_lookup_error_received(req_dgram);
     } else {
         LOG_ERR("SERVER_M_MESSAGE_ON_UNKNOWN_REQUEST_TYPE: %d", response_type);
         // On unknown response type

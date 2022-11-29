@@ -1,6 +1,7 @@
 #ifndef NETWORKING_H
 #define NETWORKING_H
 
+#include "constants.h"
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -63,6 +64,7 @@ struct __tcp_server_t {
     tcp_endpoint_t *endpoints;    
     tcp_message_rx_cb_t on_rx;
     tcp_message_tx_cb_t on_tx;
+    char username[CREDENTIALS_MAX_USERNAME_LEN + 1];
 };
 
 tcp_server_t* tcp_server_start(uint16_t port);

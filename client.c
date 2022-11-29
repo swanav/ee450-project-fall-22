@@ -134,7 +134,7 @@ static void on_authentication_failure(client_context_t* ctx, uint8_t* username, 
 }
 
 static void on_auth_result(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
-    LOG_INFO(CLIENT_MESSAGE_ON_AUTH_RESULT, ctx->creds.username_len, ctx->creds.username, ntohs(ctx->client->port));
+    LOG_INFO(CLIENT_MESSAGE_ON_AUTH_RESULT, ctx->creds.username_len, ctx->creds.username, ctx->client->port);
     uint8_t flags = 0;
     // Decode the authentication result
     protocol_authentication_response_decode(sgmnt, &flags);
@@ -311,7 +311,9 @@ static void* user_input_task(void* params) {
 static void on_receive(tcp_client_t* client, tcp_sgmnt_t* sgmnt) {
     client_context_t* ctx = (client_context_t*) client->user_data;
     response_type_t response_type = protocol_get_request_type(sgmnt);
-    LOG_INFO(CLIENT_MESSAGE_ON_RESPONSE, client->port);
+    if (response_type != RESPONSE_TYPE_AUTH) {
+        LOG_INFO(CLIENT_MESSAGE_ON_RESPONSE, client->port);
+    }
     switch (response_type) {
         case RESPONSE_TYPE_AUTH:
             // On authentication response

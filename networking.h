@@ -37,7 +37,7 @@ typedef void (*tcp_disconnect_handler_t)(struct __tcp_client_t*);
 
 struct __tcp_client_t {
     int sd;
-    int port;
+    uint16_t port;
     tcp_endpoint_t* server;
     tcp_receive_handler_t on_receive;
     tcp_disconnect_handler_t on_disconnect;

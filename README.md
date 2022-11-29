@@ -13,6 +13,9 @@
 2. Implemented backend servers, `serverCS` and `serverEE`, which receives course lookup requests over **UDP** from the frontend server, serverM and responds with the appropriate course data from a csv database, `cs.txt` and `ee.txt`.
 3. Implemented a frontend server, `serverM` which talks to the backend servers mentioned above over **UDP** and interfaces with the client application over **TCP**. Handles authentication and course information lookup requests. It also aggregates course lookup requests for multiple requests to respond to a bulk query.
 4. Implements a `client`, which talks to the frontend server, `serverM` and provides the user an interface to authenticate themselves and request information regarding courses.
+
+> This implementation contains extensive use of function pointers and macros to reduce code duplication and increase readability. Socket functionalities (TCP and UDP) have been carefully encapsulated in a separate `networking.h` file. The servers and the client reuse the same codebase to communicate over TCP and UDP. Please note that it is only the code that is being reused. The applications themselves do not share any runtime and operate in complete isolation. Where possible, the code employs macro guards to make it easy to understand which functions are accessible to which applications.
+
 -----
 ***What your code files are and what each one of them does. (Please do not repeat the project description, just name your code files and briefly mention what they do).***
 
@@ -306,25 +309,30 @@ P - PASSWORD_MISMATCH
 ***Course Lookup Error Response***
 
 ```
-| Protocol Header |
-| <   4 bytes   > |
+| Protocol Header |  Error Data  |
+| <   4 bytes   > | < X bytes > |
 ```
 
 `Type = RESPONSE_TYPE_COURSES_ERROR (0x75)`
 
 `Flags = Error Code` (Listed in `error.h`)
 
-`Length = 0`
+`Length = X`
+
+`Error Data` contains the error data.
 
 -----
 -----
 ***Any idiosyncrasy of your project. It should say under what conditions the project fails, if any.***
 
 1. This code does not handle the possibility of multiple clients to serverM properly. Although, serverM will be able to accept multiple connections, it will be able to exchange messages with the most recent client at a time. 
+2. This code also does not serve two queries at the same time. If a client sends a query, it will be served, and only then will a client be able to send another query.
 
 -----
 ***Reused Code: Did you use code from anywhere for your project? If not, say so. If so, say what functions and where they're from. (Also identify this with a comment in the source code.)***
 
-The code takes inspirations from the socket programming guide at [beej.us](https://beej.us/guide/bgnet/html/). Also some of the utility functions for string manipulation and csv handling are implemented using reference from Stack Overflow.
+The code takes inspirations from the socket programming guide at [beej.us](https://beej.us/guide/bgnet/html/). Although, none of the snippets have been copied directly. 
+
+Also some of the utility functions for string manipulation and csv handling are implemented after taking reference from Stack Overflow.
 
 -----

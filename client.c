@@ -134,7 +134,7 @@ static void on_authentication_failure(client_context_t* ctx, uint8_t* username, 
 }
 
 static void on_auth_result(client_context_t* ctx, tcp_sgmnt_t* sgmnt) {
-    LOG_INFO(CLIENT_MESSAGE_ON_AUTH_RESULT, ctx->creds.username_len, ctx->creds.username, ntohs(ctx->client->server->addr.sin_port));
+    LOG_INFO(CLIENT_MESSAGE_ON_AUTH_RESULT, ctx->creds.username_len, ctx->creds.username, ntohs(ctx->client->port));
     uint8_t flags = 0;
     // Decode the authentication result
     protocol_authentication_response_decode(sgmnt, &flags);

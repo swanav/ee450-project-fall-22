@@ -103,7 +103,7 @@ All the exchanged messages are in the format:
 
 ---
 
-***Authentication Request***
+### Authentication Request
 
 ```
 | Protocol Header | Username Len (X) | Password Len (Y) |   Username  |  Password   |
@@ -126,7 +126,8 @@ All the exchanged messages are in the format:
 
 ---
 
-***Authentication Response***
+### Authentication Response
+
 ```
 | Protocol Header |
 | <   4 bytes   > |
@@ -148,7 +149,7 @@ P - PASSWORD_MISMATCH
 
 ---
 
-***Single Course Lookup Request***
+### Single Course Lookup Request
 
 ```
 | Protocol Header | Payload (X) |
@@ -173,7 +174,7 @@ P - PASSWORD_MISMATCH
 
 ---
 
-***Single Course Lookup Response***
+### Single Course Lookup Response
 
 ```
 | Protocol Header | Course Code Length (X) | Course Code | Information Length (Y) | Information |
@@ -202,7 +203,7 @@ P - PASSWORD_MISMATCH
 
 ---
 
-***Course Detail Lookup Request***
+### Course Detail Lookup Request
 
 ```
 | Protocol Header | Course Code |
@@ -219,7 +220,7 @@ P - PASSWORD_MISMATCH
 
 ---
 
-***Course Detail Lookup Response***
+### Course Detail Lookup Response
 
 ```
 | Protocol Header | Course Code Len (A) | Course Code | Course Name Len (B) | Course Name | Professor Name Len (C) | Professor Name | Days Len (D) |    Days   | Credits Len (E) |   Credits   |
@@ -254,7 +255,7 @@ P - PASSWORD_MISMATCH
 
 ---
 
-***Course Multi Lookup Request***
+### Course Multi Lookup Request
 
 ```
 | Protocol Header | Course Count | Course1 Len (A) | Course1 Name | Course 2 Len (B) | Course 2 Name | ... | Course N Len (N) | Course N Name |
@@ -285,7 +286,7 @@ P - PASSWORD_MISMATCH
 
 ---
 
-***Course Multi Lookup Response***
+### Course Multi Lookup Response
 
 ```
                   | <  ..  ..  ..  ..  ..  ..  ..  ..  ..  .. Repeating ..  ..  ..  ..  ..  ..  ..  ..  ..  ..  > |
@@ -319,7 +320,7 @@ P - PASSWORD_MISMATCH
 
 ---
 
-***Course Lookup Error Response***
+### Course Lookup Error Response
 
 ```
 | Protocol Header |  Error Data  |

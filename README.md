@@ -5,6 +5,9 @@
 **USC ID:** `1349-7540-53`
 
 ----
+
+## Project Description
+
 ***What you have done in the assignment, if you have completed the optional part (suffix). If it’s not mentioned, it will not be considered.***
 
 > **The assignment contains all the features described in the assignment description, including the `optional` part of the assignment.**
@@ -21,6 +24,9 @@
 > I had started this implementation to serve multiple clients at the same time, but didn't after clarifications received on class forum and time constraints. The codebase is structured to support this feature in the future with minimal changes.
 
 -----
+
+## Code Structure
+
 ***What your code files are and what each one of them does. (Please do not repeat the project description, just name your code files and briefly mention what they do).***
 
 - `client.c`
@@ -62,6 +68,9 @@
     - Contains common string manipulation and math utilities used across different programs.
 
 -----
+
+## Frame Formats
+
 ***The format of all the messages exchanged.***
 
 The `protocol.c` contains all the message formats and the functions to serialize and deserialize them.
@@ -329,6 +338,8 @@ P - PASSWORD_MISMATCH
 
 -----
 
+## Known Issues
+
 ***Any idiosyncrasy of your project. It should say under what conditions the project fails, if any.***
 
 1. This code does not handle the possibility of multiple clients to serverM properly. Although, serverM will be able to accept multiple connections, it will be able to exchange messages with the most recent client at a time.
@@ -339,7 +350,7 @@ P - PASSWORD_MISMATCH
 
 -----
 
-### References
+## References
 
 ***Reused Code: Did you use code from anywhere for your project? If not, say so. If so, say what functions and where they're from. (Also identify this with a comment in the source code.)***
 

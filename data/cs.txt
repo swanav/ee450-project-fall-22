@@ -1,0 +1,5 @@
+CS100,4,Sathyanaraya Raghavachary,Tue;Thu,Explorations in Computing
+CS310,4,Chao Wang,Mon;Wed,Software Engineering
+CS561,4,Wei-Min Shen,Wednesday,Foundations of Artificial Intelligence
+CS435,4,Sanjay Madhav,Tue;Thu,Professional C++
+CS356,4,Marco Paolieri,Tue;Thu,Introduction to Computer Systems

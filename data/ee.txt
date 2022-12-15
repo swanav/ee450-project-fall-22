@@ -1,0 +1,5 @@
+EE450,4,Ali Zahid,Tue;Thu,Introduction to Computer Networks
+EE658,3,Moe Tabar,Saturday,Diagnosis and Design of Reliable Digital Systems
+EE604,4,Wade Hsu,Mon;Wed,Computational Methods in Applied Physics
+EE608,4,Eun Kim,Monday,Wearable Technology
+EE520,4,Todd Brun,Tue;Thu,Introduction to Quantum Information Processing

@@ -5,7 +5,7 @@ OUT_DIR := out
 
 all: client serverM serverC serverCS serverEE
 
-client: client.c
+client: $(SRC_DIR)/client.c
 	gcc -g -Wall -DCLIENT \
 		-o $(OUT_DIR)/client \
 			$(SRC_DIR)/client.c \
@@ -16,7 +16,7 @@ client: client.c
 			$(SRC_DIR)/utils.c \
 		-lpthread
 
-serverM: serverM.c
+serverM: $(SRC_DIR)/serverM.c
 	gcc -g -Wall -DSERVER_M \
 		-o $(OUT_DIR)/serverM \
 			$(SRC_DIR)/serverM.c \
@@ -27,7 +27,7 @@ serverM: serverM.c
 			$(SRC_DIR)/utils.c \
 		-lpthread
 
-serverC: serverC.c
+serverC: $(SRC_DIR)/serverC.c
 	gcc -g -Wall -DSERVER_C \
 		-o $(OUT_DIR)/serverC \
 			$(SRC_DIR)/serverC.c \
@@ -38,7 +38,7 @@ serverC: serverC.c
 			$(SRC_DIR)/networking.c \
 			$(SRC_DIR)/utils.c
 
-serverCS: serverCS.c
+serverCS: $(SRC_DIR)/serverCS.c
 	gcc -g -Wall -DSERVER_CS \
 		-o $(OUT_DIR)/serverCS \
 			$(SRC_DIR)/serverCS.c \
@@ -50,7 +50,7 @@ serverCS: serverCS.c
 			$(SRC_DIR)/networking.c \
 			$(SRC_DIR)/utils.c
 
-serverEE: serverEE.c
+serverEE: $(SRC_DIR)/serverEE.c
 	gcc -g -Wall -DSERVER_EE \
 		-o $(OUT_DIR)/serverEE \
 			$(SRC_DIR)/serverEE.c \

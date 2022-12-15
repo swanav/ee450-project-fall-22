@@ -71,10 +71,45 @@ static void udp_message_rx_handler(udp_ctx_t* ctx, udp_endpoint_t* source, udp_d
     LOG_INFO(SERVER_C_MESSAGE_ON_AUTH_RESPONSE_SENT);
 }
 
-int main() {
+// Print CLI Usage
+void print_usage() {
+    LOG_ERR("Usage: ./serverC --filename <filename>");
+    exit(0);
+}
+
+
+char* capture_data_file_from_args(int argc, char** argv) {
+    if (argc > 1) {
+        // If the program is run with arguments, capture the second argument if first argument is --filename
+        if (strcmp(argv[1], "--filename") == 0) {
+            if (argc > 2) {
+                // If the second argument is present, use it as the filename
+                return argv[2];
+            } else {
+                // If the second argument is not present, show an error and exit
+                print_usage();
+            }
+        } else {
+            // If the first argument is not --filename, show an error and exit
+            print_usage();
+        }
+    }
+    return NULL;
+}
+
+int main(int argc, char** argv) {
+
+    char* credentials_file = CREDENTIALS_FILE;
+
+    credentials_file = capture_data_file_from_args(argc, argv);
 
     // Read and store the credentials database from `CREDENTIALS_FILE`
-    credentials_db = fileio_credential_server_db_create(CREDENTIALS_FILE);
+    credentials_db = fileio_credential_server_db_create(credentials_file);
+    if (!credentials_db) {
+        // Credentials database failed to load. Show an error and exit.
+        LOG_ERR("SERVER_C_MESSAGE_ON_CREDENTIALS_DB_LOAD_FAILURE");
+        return -1;
+    }
 
     // [Debug only] Log the credentials
     log_credentials(credentials_db);

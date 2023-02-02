@@ -2,8 +2,6 @@
 
 **Name:** Swanav Swaroop
 
-**USC ID:** `1349-7540-53`
-
 ----
 
 ## Project Description
